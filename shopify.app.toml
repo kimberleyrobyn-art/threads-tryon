@@ -7,7 +7,7 @@
 
 name = "Threads of Creation Try-On"
 client_id = "REPLACE_ME_CLIENT_ID"
-application_url = "https://REPLACE_ME_BACKEND_URL"
+application_url = "https://threads-tryon.onrender.com"
 embedded = false
 
 [access_scopes]
@@ -16,7 +16,7 @@ embedded = false
 scopes = ""
 
 [auth]
-redirect_urls = [ "https://REPLACE_ME_BACKEND_URL/auth/callback" ]
+redirect_urls = [ "https://threads-tryon.onrender.com/auth/callback" ]
 
 [webhooks]
 # Verify this against the latest available version in the Dev Dashboard
@@ -35,6 +35,6 @@ api_version = "2025-10"
 # Storefront JS calls https://threadsofcreation.com/apps/tryon/... which
 # Shopify forwards server-to-server to application_url + this path, signed
 # with the client secret so the backend can verify requests are genuine.
-url = "https://REPLACE_ME_BACKEND_URL/proxy"
+url = "https://threads-tryon.onrender.com/proxy"
 subpath = "tryon"
 prefix = "apps"
