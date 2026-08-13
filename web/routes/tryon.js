@@ -30,13 +30,27 @@ function verifyProxySignature(req) {
   return crypto.timingSafeEqual(digestBuf, signatureBuf);
 }
 
+// Shopify's `image_url` Liquid filter returns a protocol-relative URL
+// (starting with "//"), which only resolves in a browser. FASHN's server
+// has no "current protocol" to infer, so it must be a fully-qualified URL.
+function normalizeImageUrl(url) {
+  return url.startsWith('//') ? `https:${url}` : url;
+}
+
 // Light abuse guard: only allow garment images that actually come from
-// Shopify's CDN, not arbitrary URLs -- otherwise this endpoint becomes a
-// free way for anyone to burn your FASHN credits on unrelated images.
+// this store, not arbitrary URLs -- otherwise this endpoint becomes a free
+// way for anyone to burn your FASHN credits on unrelated images. Stores
+// with a connected custom domain (like threadsofcreation.com) serve their
+// CDN images from that domain's /cdn/shop/ path rather than
+// cdn.shopify.com, so the storefront domain needs to be allow-listed too.
 function isAllowedProductImage(url) {
   try {
     const { hostname } = new URL(url);
-    return hostname === 'cdn.shopify.com' || hostname.endsWith('.myshopify.com');
+    if (hostname === 'cdn.shopify.com' || hostname.endsWith('.myshopify.com')) {
+      return true;
+    }
+    const storefrontDomain = process.env.STOREFRONT_DOMAIN;
+    return Boolean(storefrontDomain) && hostname === storefrontDomain;
   } catch {
     return false;
   }
@@ -47,14 +61,16 @@ router.post('/proxy/start', express.json({ limit: '15mb' }), async (req, res) =>
     return res.status(401).json({ error: 'Invalid request signature' });
   }
 
-  const { model_image: modelImage, product_image: productImage } = req.body || {};
+  const { model_image: modelImage, product_image: rawProductImage } = req.body || {};
 
-  if (!modelImage || !productImage) {
+  if (!modelImage || !rawProductImage) {
     return res.status(400).json({ error: 'model_image and product_image are required' });
   }
   if (!modelImage.startsWith('data:image/')) {
     return res.status(400).json({ error: 'model_image must be a base64 data URI' });
   }
+
+  const productImage = normalizeImageUrl(rawProductImage);
   if (!isAllowedProductImage(productImage)) {
     return res.status(400).json({ error: 'product_image must be a Shopify-hosted image URL' });
   }
