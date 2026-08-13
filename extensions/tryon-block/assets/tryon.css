@@ -1,0 +1,175 @@
+/*
+ * Colors/typography below were pulled from the live "Add to Cart" button
+ * and body text on threadsofcreation.com on 2026-08-12. If the store
+ * switches themes later, re-check these against the new theme's actual
+ * button styling -- they're hardcoded as a best-effort match, not
+ * inherited automatically (Shopify themes don't expose a standard set of
+ * CSS variable names we can rely on across themes).
+ */
+.tryon-block {
+  --tryon-accent: #9c7d3b;
+  --tryon-text: #502807;
+  --tryon-bg: #f8edd4;
+  margin: 1rem 0;
+  font-family: inherit;
+}
+
+.tryon-trigger {
+  display: inline-block;
+  width: 100%;
+  padding: 0 1rem;
+  height: 45px;
+  line-height: 41px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--tryon-accent);
+  border: 2px solid var(--tryon-accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tryon-trigger:hover {
+  background: var(--tryon-accent);
+  color: #fff;
+}
+
+.tryon-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(80, 40, 7, 0.5);
+  padding: 1rem;
+}
+
+.tryon-panel[hidden] {
+  display: none;
+}
+
+.tryon-panel-inner {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--tryon-bg);
+  color: var(--tryon-text);
+  border-radius: 4px;
+  padding: 2.5rem 1.75rem 1.75rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.tryon-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--tryon-text);
+  opacity: 0.7;
+}
+
+.tryon-close:hover {
+  opacity: 1;
+}
+
+.tryon-step[hidden] {
+  display: none;
+}
+
+.tryon-copy {
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: var(--tryon-text);
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+}
+
+.tryon-upload-btn,
+.tryon-retry-btn {
+  display: inline-block;
+  padding: 0 1.25rem;
+  height: 45px;
+  line-height: 41px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--tryon-accent);
+  border: 2px solid var(--tryon-accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tryon-upload-btn:hover,
+.tryon-retry-btn:hover {
+  background: var(--tryon-accent);
+  color: #fff;
+}
+
+.tryon-error {
+  margin-top: 1.25rem;
+  color: #b00020;
+  font-size: 0.85em;
+}
+
+.tryon-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 1.25rem;
+  border: 3px solid rgba(156, 125, 59, 0.25);
+  border-top-color: var(--tryon-accent);
+  border-radius: 50%;
+  animation: tryon-spin 0.8s linear infinite;
+}
+
+@keyframes tryon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tryon-result-image {
+  width: 100%;
+  border-radius: 4px;
+  margin-bottom: 1.25rem;
+}
+
+.tryon-result-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tryon-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  height: 45px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: var(--tryon-accent);
+  color: #fff;
+  border: 2px solid var(--tryon-accent);
+  border-radius: 2px;
+}

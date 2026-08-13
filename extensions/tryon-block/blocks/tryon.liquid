@@ -1,0 +1,69 @@
+{% comment %}
+  Threads of Creation - "See it on you" virtual try-on block.
+  Add this block inside the product page's main product section via the
+  theme editor. Reads the current product's image directly from Liquid,
+  so no Admin API call is needed at runtime.
+{% endcomment %}
+
+{{ 'tryon.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="tryon-block"
+  data-tryon-block
+  data-product-image="{{ product.featured_image | image_url: width: 1024 }}"
+  data-product-title="{{ product.title | escape }}"
+>
+  <button type="button" class="tryon-trigger" data-tryon-trigger>
+    {{ block.settings.button_text | default: 'See it on you' }}
+  </button>
+
+  <div class="tryon-panel" data-tryon-panel hidden>
+    <div class="tryon-panel-inner" role="dialog" aria-modal="true" aria-label="Virtual try-on">
+      <button type="button" class="tryon-close" data-tryon-close aria-label="Close">&times;</button>
+
+      <div class="tryon-step" data-tryon-step="upload">
+        <p class="tryon-copy">
+          Upload a clear, well-lit photo of yourself facing the camera. Your
+          photo is sent directly to our try-on provider (FASHN) to generate
+          the preview and is not stored on our servers. FASHN automatically
+          deletes results after 3 days.
+        </p>
+        <input type="file" accept="image/*" capture="environment" data-tryon-file-input hidden />
+        <button type="button" class="tryon-upload-btn" data-tryon-upload-btn>
+          Choose or take a photo
+        </button>
+        <p class="tryon-error" data-tryon-error hidden></p>
+      </div>
+
+      <div class="tryon-step" data-tryon-step="loading" hidden>
+        <div class="tryon-spinner" aria-hidden="true"></div>
+        <p>Generating your try-on&hellip; this can take up to a minute.</p>
+      </div>
+
+      <div class="tryon-step" data-tryon-step="result" hidden>
+        <img class="tryon-result-image" data-tryon-result-image alt="{{ product.title | escape }} on you" />
+        <div class="tryon-result-actions">
+          <a class="tryon-download-btn" data-tryon-download download="try-on-result.jpg">Save photo</a>
+          <button type="button" class="tryon-retry-btn" data-tryon-retry>Try another photo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'tryon.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "See it on you",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "See it on you"
+    }
+  ]
+}
+{% endschema %}

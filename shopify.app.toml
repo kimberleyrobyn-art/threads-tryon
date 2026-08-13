@@ -1,0 +1,40 @@
+# Shopify app configuration.
+# The three REPLACE_ME values below get filled in once you have:
+#   1. A client_id from the Dev Dashboard app you already created
+#   2. A live backend URL (from deploying web/ to Render/Railway/etc.)
+# See README.md "Deployment" section for the exact steps and where each
+# value maps to a field on the Dev Dashboard "Create a version" screen.
+
+name = "Threads of Creation Try-On"
+client_id = "REPLACE_ME_CLIENT_ID"
+application_url = "https://REPLACE_ME_BACKEND_URL"
+embedded = false
+
+[access_scopes]
+# No Admin API scopes needed: the garment image is read directly from
+# Liquid on the product page, not fetched via the Admin API at request time.
+scopes = ""
+
+[auth]
+redirect_urls = [ "https://REPLACE_ME_BACKEND_URL/auth/callback" ]
+
+[webhooks]
+# Verify this against the latest available version in the Dev Dashboard
+# at deploy time -- it changes quarterly.
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app-uninstalled"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "/webhooks/compliance"
+
+[app_proxy]
+# Storefront JS calls https://threadsofcreation.com/apps/tryon/... which
+# Shopify forwards server-to-server to application_url + this path, signed
+# with the client secret so the backend can verify requests are genuine.
+url = "https://REPLACE_ME_BACKEND_URL/proxy"
+subpath = "tryon"
+prefix = "apps"

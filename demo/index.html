@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Try-On Block Demo (local, not deployed)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/tryon-assets/tryon.css" />
+  <style>
+    /* Approximates threadsofcreation.com's cream/brown palette so the
+       block doesn't look out of place -- but the real serif fonts (Fino
+       Regular, Zen Old Mincho) only load on the actual theme, not here. */
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 640px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      color: #502807;
+      background: #f8edd4;
+    }
+    .demo-banner {
+      background: #fff3cd;
+      border: 1px solid #e0c46c;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9em;
+      margin-bottom: 1.5rem;
+      color: #222;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .demo-product-image {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 1.4rem; font-weight: normal; }
+  </style>
+</head>
+<body>
+  <div class="demo-banner">
+    <strong>Local demo, not deployed.</strong> This page is served by the
+    scaffold's dev server with a fake backend standing in for FASHN
+    (<code>web/routes/demo.js</code>). It exists only so you can click
+    through the real button/upload/loading/result UX. The "result" is a
+    placeholder image, not a real try-on.
+  </div>
+
+  <h1>Crescent Moon Eco Polyester Yoga Top</h1>
+  <img class="demo-product-image" src="https://cdn.shopify.com/s/files/1/0739/5101/9310/files/il_fullxfull.8329839552_qlhz.jpg?v=1786234970" alt="Crescent Moon Eco Polyester Yoga Top" />
+  <p>$55.00 &mdash; real product from threadsofcreation.com, pulled live via the Shopify Admin API for this demo</p>
+
+  <!-- Everything below is the same markup extensions/tryon-block/blocks/tryon.liquid
+       renders, with Liquid tags replaced by hardcoded demo values. -->
+  <div
+    class="tryon-block"
+    data-tryon-block
+    data-product-image="https://cdn.shopify.com/s/files/1/0739/5101/9310/files/il_fullxfull.8329839552_qlhz.jpg?v=1786234970"
+    data-product-title="Crescent Moon Eco Polyester Yoga Top"
+  >
+    <button type="button" class="tryon-trigger" data-tryon-trigger>
+      See it on you
+    </button>
+
+    <div class="tryon-panel" data-tryon-panel hidden>
+      <div class="tryon-panel-inner" role="dialog" aria-modal="true" aria-label="Virtual try-on">
+        <button type="button" class="tryon-close" data-tryon-close aria-label="Close">&times;</button>
+
+        <div class="tryon-step" data-tryon-step="upload">
+          <p class="tryon-copy">
+            Upload a clear, well-lit photo of yourself facing the camera. Your
+            photo is sent directly to our try-on provider (FASHN) to generate
+            the preview and is not stored on our servers. FASHN automatically
+            deletes results after 3 days.
+          </p>
+          <input type="file" accept="image/*" capture="environment" data-tryon-file-input hidden />
+          <button type="button" class="tryon-upload-btn" data-tryon-upload-btn>
+            Choose or take a photo
+          </button>
+          <p class="tryon-error" data-tryon-error hidden></p>
+        </div>
+
+        <div class="tryon-step" data-tryon-step="loading" hidden>
+          <div class="tryon-spinner" aria-hidden="true"></div>
+          <p>Generating your try-on&hellip; this can take up to a minute.</p>
+        </div>
+
+        <div class="tryon-step" data-tryon-step="result" hidden>
+          <img class="tryon-result-image" data-tryon-result-image alt="Linen Wrap Dress on you" />
+          <div class="tryon-result-actions">
+            <a class="tryon-download-btn" data-tryon-download download="try-on-result.jpg">Save photo</a>
+            <button type="button" class="tryon-retry-btn" data-tryon-retry>Try another photo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/tryon-assets/tryon.js" defer></script>
+</body>
+</html>
