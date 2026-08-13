@@ -6,7 +6,7 @@
 # value maps to a field on the Dev Dashboard "Create a version" screen.
 
 name = "Threads of Creation Try-On"
-client_id = "REPLACE_ME_CLIENT_ID"
+client_id = "1674bcd3ef75b48569705dcfef9d2cc4"
 application_url = "https://threads-tryon.onrender.com"
 embedded = false
 
