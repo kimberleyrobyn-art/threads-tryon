@@ -8,26 +8,38 @@ const router = express.Router();
 // client secret so the backend can be sure it's really Shopify forwarding
 // a storefront request, not someone hitting the backend URL directly.
 function verifyProxySignature(req) {
+  // Guard against a missing/misconfigured secret so a bad env var fails
+  // closed (401) instead of throwing and taking the whole process down --
+  // an uncaught throw here inside an async route handler becomes an
+  // unhandled rejection Express 4 won't catch.
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (!secret) {
+    console.error('SHOPIFY_API_SECRET is not set; rejecting proxy request.');
+    return false;
+  }
+
   const { signature, ...rest } = req.query;
   if (!signature) return false;
 
-  const message = Object.keys(rest)
-    .sort()
-    .map((key) => {
-      const value = Array.isArray(rest[key]) ? rest[key].join(',') : rest[key];
-      return `${key}=${value}`;
-    })
-    .join('');
+  try {
+    const message = Object.keys(rest)
+      .sort()
+      .map((key) => {
+        const value = Array.isArray(rest[key]) ? rest[key].join(',') : rest[key];
+        return `${key}=${value}`;
+      })
+      .join('');
 
-  const digest = crypto
-    .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
-    .update(message)
-    .digest('hex');
+    const digest = crypto.createHmac('sha256', secret).update(message).digest('hex');
 
-  const digestBuf = Buffer.from(digest, 'utf8');
-  const signatureBuf = Buffer.from(String(signature), 'utf8');
-  if (digestBuf.length !== signatureBuf.length) return false;
-  return crypto.timingSafeEqual(digestBuf, signatureBuf);
+    const digestBuf = Buffer.from(digest, 'utf8');
+    const signatureBuf = Buffer.from(String(signature), 'utf8');
+    if (digestBuf.length !== signatureBuf.length) return false;
+    return crypto.timingSafeEqual(digestBuf, signatureBuf);
+  } catch (err) {
+    console.error('Signature verification failed:', err.message);
+    return false;
+  }
 }
 
 // Shopify's `image_url` Liquid filter returns a protocol-relative URL
