@@ -10,6 +10,19 @@ const tryonRoutes = isDemo ? require('./routes/demo') : require('./routes/tryon'
 
 const app = express();
 
+// TEMP DIAGNOSTIC -- logs every request that actually reaches this process.
+// Without this, "nothing in the logs" is ambiguous: it could mean the
+// request never arrived, or it arrived and was handled silently (we only
+// ever logged errors, not normal traffic). Remove once the App Proxy 500
+// issue is root-caused.
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    console.log(`[req] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${Date.now() - startedAt}ms)`);
+  });
+  next();
+});
+
 app.get('/health', (_req, res) => res.status(200).send('ok'));
 
 // TEMP DIAGNOSTIC -- checks whether this server can actually reach FASHN's
