@@ -173,3 +173,131 @@
   border: 2px solid var(--tryon-accent);
   border-radius: 2px;
 }
+
+.tryon-back-btn {
+  display: block;
+  margin: 0.75rem auto 0;
+  background: none;
+  border: none;
+  color: var(--tryon-accent);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tryon-outfit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.tryon-outfit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(156, 125, 59, 0.35);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.tryon-outfit-item img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tryon-outfit-item-title {
+  flex: 1;
+  font-size: 0.8em;
+  line-height: 1.3;
+}
+
+.tryon-outfit-item-remove {
+  background: none;
+  border: none;
+  color: var(--tryon-text);
+  opacity: 0.6;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.tryon-outfit-item-remove:hover {
+  opacity: 1;
+}
+
+.tryon-search {
+  position: relative;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.tryon-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.85em;
+  border: 1px solid rgba(156, 125, 59, 0.5);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--tryon-text);
+}
+
+.tryon-search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid rgba(156, 125, 59, 0.5);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(80, 40, 7, 0.15);
+}
+
+.tryon-search-results[hidden] {
+  display: none;
+}
+
+.tryon-search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(156, 125, 59, 0.15);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.8em;
+  color: var(--tryon-text);
+}
+
+.tryon-search-result:last-child {
+  border-bottom: none;
+}
+
+.tryon-search-result:hover {
+  background: rgba(156, 125, 59, 0.1);
+}
+
+.tryon-search-result img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}

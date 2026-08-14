@@ -1,8 +1,12 @@
 {% comment %}
-  Threads of Creation - "See it on you" virtual try-on block.
-  Add this block inside the product page's main product section via the
-  theme editor. Reads the current product's image directly from Liquid,
-  so no Admin API call is needed at runtime.
+  Threads of Creation - "See it on you" virtual try-on block, with an
+  outfit builder ("wardrobe") that lets customers add more items from the
+  store to try on together with the current product.
+
+  The current product's image is read directly from Liquid (no Admin API
+  call needed). Additional wardrobe items are searched client-side via the
+  Storefront API using the public token configured below -- that token is
+  designed to be exposed in client-side code, unlike the Admin API secret.
 {% endcomment %}
 
 {{ 'tryon.css' | asset_url | stylesheet_tag }}
@@ -10,8 +14,11 @@
 <div
   class="tryon-block"
   data-tryon-block
+  data-product-id="{{ product.id }}"
   data-product-image="{{ product.featured_image | image_url: width: 1024 }}"
   data-product-title="{{ product.title | escape }}"
+  data-storefront-token="{{ block.settings.storefront_api_token }}"
+  data-max-items="{{ block.settings.max_outfit_items }}"
 >
   <button type="button" class="tryon-trigger" data-tryon-trigger>
     {{ block.settings.button_text | default: 'See it on you' }}
@@ -21,7 +28,30 @@
     <div class="tryon-panel-inner" role="dialog" aria-modal="true" aria-label="Virtual try-on">
       <button type="button" class="tryon-close" data-tryon-close aria-label="Close">&times;</button>
 
-      <div class="tryon-step" data-tryon-step="upload">
+      <div class="tryon-step" data-tryon-step="outfit">
+        <p class="tryon-copy">Build your outfit, then try it on.</p>
+
+        <div class="tryon-outfit-list" data-tryon-outfit-list></div>
+
+        <div class="tryon-search">
+          <input
+            type="text"
+            class="tryon-search-input"
+            data-tryon-search-input
+            placeholder="Search for more items to add (optional)"
+            autocomplete="off"
+          />
+          <div class="tryon-search-results" data-tryon-search-results hidden></div>
+        </div>
+
+        <p class="tryon-error" data-tryon-error-outfit hidden></p>
+
+        <button type="button" class="tryon-upload-btn" data-tryon-continue-btn>
+          Continue
+        </button>
+      </div>
+
+      <div class="tryon-step" data-tryon-step="upload" hidden>
         <p class="tryon-copy">
           Upload a clear, well-lit photo of yourself facing the camera. Your
           photo is sent directly to our try-on provider (FASHN) to generate
@@ -32,12 +62,15 @@
         <button type="button" class="tryon-upload-btn" data-tryon-upload-btn>
           Choose or take a photo
         </button>
+        <button type="button" class="tryon-back-btn" data-tryon-back-to-outfit>
+          &larr; Back to outfit
+        </button>
         <p class="tryon-error" data-tryon-error hidden></p>
       </div>
 
       <div class="tryon-step" data-tryon-step="loading" hidden>
         <div class="tryon-spinner" aria-hidden="true"></div>
-        <p>Generating your try-on&hellip; this can take up to a minute.</p>
+        <p data-tryon-loading-text>Generating your try-on&hellip; this can take up to a minute.</p>
       </div>
 
       <div class="tryon-step" data-tryon-step="result" hidden>
@@ -63,6 +96,22 @@
       "id": "button_text",
       "label": "Button text",
       "default": "See it on you"
+    },
+    {
+      "type": "text",
+      "id": "storefront_api_token",
+      "label": "Storefront API public access token",
+      "info": "From Shopify admin → Sales channels → Headless → your storefront → Storefront API. Needed for the outfit builder's product search."
+    },
+    {
+      "type": "range",
+      "id": "max_outfit_items",
+      "label": "Max items per outfit",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "info": "Each extra item is a separate FASHN generation, adding processing time and cost."
     }
   ]
 }

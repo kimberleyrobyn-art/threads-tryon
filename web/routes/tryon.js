@@ -68,6 +68,19 @@ function isAllowedProductImage(url) {
   }
 }
 
+// For multi-item outfits, each step's FASHN output becomes the next step's
+// model_image -- allow that specific case (our own prior trusted result)
+// in addition to a fresh base64 upload from the customer.
+function isAllowedModelImage(value) {
+  if (value.startsWith('data:image/')) return true;
+  try {
+    const { hostname } = new URL(value);
+    return hostname === 'cdn.fashn.ai';
+  } catch {
+    return false;
+  }
+}
+
 router.post('/proxy/start', express.json({ limit: '15mb' }), async (req, res) => {
   if (!verifyProxySignature(req)) {
     return res.status(401).json({ error: 'Invalid request signature' });
@@ -78,8 +91,8 @@ router.post('/proxy/start', express.json({ limit: '15mb' }), async (req, res) =>
   if (!modelImage || !rawProductImage) {
     return res.status(400).json({ error: 'model_image and product_image are required' });
   }
-  if (!modelImage.startsWith('data:image/')) {
-    return res.status(400).json({ error: 'model_image must be a base64 data URI' });
+  if (!isAllowedModelImage(modelImage)) {
+    return res.status(400).json({ error: 'model_image must be a base64 data URI or a previous FASHN result' });
   }
 
   const productImage = normalizeImageUrl(rawProductImage);
