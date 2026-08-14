@@ -22,18 +22,38 @@
     });
   }
 
+  // Titles in this catalog tend to be long, similar-looking marketing
+  // copy ("X - Sustainable Fashion from Recycled Plastic Bottles"). The
+  // part before " - " is what actually distinguishes one product from
+  // another, so use just that for display; keep the full title for
+  // alt text / accessibility.
+  function shortTitle(title) {
+    var short = title.split(' - ')[0].trim();
+    if (short.length > 46) short = short.slice(0, 43).trim() + '…';
+    return short;
+  }
+
   function mapProductEdges(edges) {
     return edges
       .map(function (edge) {
         return {
           id: edge.node.id,
           title: edge.node.title,
+          shortTitle: shortTitle(edge.node.title),
           imageUrl: edge.node.featuredImage ? edge.node.featuredImage.url : null,
         };
       })
       .filter(function (item) {
         return !!item.imageUrl;
       });
+  }
+
+  // Scope search to the title field with wildcards instead of Shopify's
+  // default free-text search, which matches description/tags too broadly
+  // (e.g. searching "top" was surfacing a poncho).
+  function buildTitleQuery(text) {
+    var sanitized = text.replace(/[":*]/g, '').trim();
+    return 'title:*' + sanitized + '*';
   }
 
   function currentSeason() {
@@ -82,7 +102,12 @@
     var currentProductTitle = block.getAttribute('data-product-title');
     var currentProductItem =
       mode === 'product' && currentProductImage
-        ? { id: currentProductId, title: currentProductTitle, imageUrl: currentProductImage }
+        ? {
+            id: currentProductId,
+            title: currentProductTitle,
+            shortTitle: shortTitle(currentProductTitle),
+            imageUrl: currentProductImage,
+          }
         : null;
 
     var outfitItems = [];
@@ -159,7 +184,7 @@
 
         var title = document.createElement('span');
         title.className = 'tryon-outfit-item-title';
-        title.textContent = item.title;
+        title.textContent = item.shortTitle || item.title;
         row.appendChild(title);
 
         var removeBtn = document.createElement('button');
@@ -182,7 +207,7 @@
     function searchProducts(queryText) {
       var query =
         'query($q: String!) { products(first: 20, query: $q) { edges { node { id title featuredImage { url } } } } }';
-      return storefrontFetch(storefrontToken, query, { q: queryText }).then(function (data) {
+      return storefrontFetch(storefrontToken, query, { q: buildTitleQuery(queryText) }).then(function (data) {
         var edges = (data.data && data.data.products && data.data.products.edges) || [];
         return mapProductEdges(edges).filter(function (item) {
           return !isInOutfit(item.id);
@@ -207,7 +232,7 @@
         row.appendChild(img);
 
         var title = document.createElement('span');
-        title.textContent = item.title;
+        title.textContent = item.shortTitle || item.title;
         row.appendChild(title);
 
         row.addEventListener('click', function () {
@@ -266,7 +291,7 @@
         tile.appendChild(img);
 
         var title = document.createElement('span');
-        title.textContent = item.title;
+        title.textContent = item.shortTitle || item.title;
         tile.appendChild(title);
 
         tile.addEventListener('click', function () {
