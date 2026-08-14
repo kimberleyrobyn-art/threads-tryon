@@ -21,14 +21,16 @@
   {% endif %}
 
   <div class="tryon-step" data-tryon-step="outfit">
-    <div class="tryon-season-tabs" data-tryon-season-tabs>
-      {% for collection in block.settings.browse_collections %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="{{ collection.handle }}">{{ collection.title }}</button>
-      {% endfor %}
-    </div>
+    <div class="tryon-browse-column">
+      <div class="tryon-season-tabs" data-tryon-season-tabs>
+        {% for collection in block.settings.browse_collections %}
+          <button type="button" class="tryon-season-tab" data-tryon-season-tab="{{ collection.handle }}">{{ collection.title }}</button>
+        {% endfor %}
+      </div>
 
-    <div class="tryon-browse-grid" data-tryon-browse-grid></div>
-    <button type="button" class="tryon-load-more-btn" data-tryon-load-more hidden>Load more</button>
+      <div class="tryon-browse-grid" data-tryon-browse-grid></div>
+      <button type="button" class="tryon-load-more-btn" data-tryon-load-more hidden>Load more</button>
+    </div>
 
     <div class="tryon-outfit-sidebar">
       <h2 class="tryon-outfit-sidebar-heading">Your outfit</h2>
