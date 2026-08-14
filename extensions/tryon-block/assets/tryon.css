@@ -83,6 +83,7 @@
   position: absolute;
   top: 0.85rem;
   right: 1.1rem;
+  height: auto;
   background: none;
   border: none;
   font-size: 2rem;
@@ -194,6 +195,8 @@
 
 .tryon-back-btn {
   display: block;
+  height: auto;
+  line-height: normal;
   margin: 0.85rem auto 0;
   background: none;
   border: none;
@@ -237,6 +240,7 @@
 }
 
 .tryon-outfit-item-remove {
+  height: auto;
   background: none;
   border: none;
   color: var(--tryon-text);
@@ -293,6 +297,8 @@
   align-items: center;
   gap: 0.7rem;
   width: 100%;
+  height: auto;
+  line-height: normal;
   padding: 0.6rem 0.9rem;
   background: none;
   border: none;
@@ -370,6 +376,8 @@
 }
 
 .tryon-season-tab {
+  height: auto;
+  line-height: normal;
   padding: 0.6rem 1.1rem;
   font-family: inherit;
   font-size: 0.85em;
@@ -426,6 +434,8 @@
 .tryon-browse-tile {
   display: flex;
   flex-direction: column;
+  height: auto;
+  line-height: normal;
   gap: 0.4rem;
   padding: 0;
   background: none;
