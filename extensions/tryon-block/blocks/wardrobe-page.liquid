@@ -14,11 +14,6 @@
   data-tryon-mode="wardrobe-page"
   data-storefront-token="{{ block.settings.storefront_api_token }}"
   data-max-items="{{ block.settings.max_outfit_items }}"
-  data-collection-spring="{{ block.settings.collection_spring.handle }}"
-  data-collection-summer="{{ block.settings.collection_summer.handle }}"
-  data-collection-fall="{{ block.settings.collection_fall.handle }}"
-  data-collection-winter="{{ block.settings.collection_winter.handle }}"
-  data-collection-lifestyle="{{ block.settings.collection_lifestyle.handle }}"
 >
   <h1 class="tryon-wardrobe-heading">{{ block.settings.heading | default: 'Build Your Outfit' }}</h1>
   {% if block.settings.subheading != blank %}
@@ -27,21 +22,9 @@
 
   <div class="tryon-step" data-tryon-step="outfit">
     <div class="tryon-season-tabs" data-tryon-season-tabs>
-      {% if block.settings.collection_spring != blank %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="spring">Spring</button>
-      {% endif %}
-      {% if block.settings.collection_summer != blank %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="summer">Summer</button>
-      {% endif %}
-      {% if block.settings.collection_fall != blank %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="fall">Fall</button>
-      {% endif %}
-      {% if block.settings.collection_winter != blank %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="winter">Winter</button>
-      {% endif %}
-      {% if block.settings.collection_lifestyle != blank %}
-        <button type="button" class="tryon-season-tab" data-tryon-season-tab="lifestyle">Lifestyle</button>
-      {% endif %}
+      {% for collection in block.settings.browse_collections %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="{{ collection.handle }}">{{ collection.title }}</button>
+      {% endfor %}
     </div>
 
     <div class="tryon-browse-grid" data-tryon-browse-grid></div>
@@ -135,30 +118,10 @@
       "default": 3
     },
     {
-      "type": "collection",
-      "id": "collection_spring",
-      "label": "Spring collection"
-    },
-    {
-      "type": "collection",
-      "id": "collection_summer",
-      "label": "Summer collection"
-    },
-    {
-      "type": "collection",
-      "id": "collection_fall",
-      "label": "Fall collection"
-    },
-    {
-      "type": "collection",
-      "id": "collection_winter",
-      "label": "Winter collection"
-    },
-    {
-      "type": "collection",
-      "id": "collection_lifestyle",
-      "label": "Lifestyle collection",
-      "info": "For non-seasonal categories like yoga/activewear, loungewear, etc."
+      "type": "collection_list",
+      "id": "browse_collections",
+      "label": "Browse tabs",
+      "info": "One tab per collection, shown in this order. Name your collections however you like (e.g. Spring, Summer, Yoga) -- the tab label is just the collection's title."
     }
   ]
 }

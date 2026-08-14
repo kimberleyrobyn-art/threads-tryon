@@ -56,14 +56,6 @@
     return 'title:*' + sanitized + '*';
   }
 
-  function currentSeason() {
-    var month = new Date().getMonth(); // 0 = Jan
-    if (month >= 2 && month <= 4) return 'spring';
-    if (month >= 5 && month <= 7) return 'summer';
-    if (month >= 8 && month <= 10) return 'fall';
-    return 'winter';
-  }
-
   function initBlock(block) {
     var mode = block.getAttribute('data-tryon-mode') === 'wardrobe-page' ? 'wardrobe-page' : 'product';
 
@@ -303,15 +295,13 @@
       });
     }
 
-    function loadSeasonCollection(season, append) {
-      if (!browseGridEl) return;
-      var handle = block.getAttribute('data-collection-' + season);
-      if (!handle) return;
+    function loadSeasonCollection(handle, append) {
+      if (!browseGridEl || !handle) return;
 
       if (!append) {
         browseGridEl.innerHTML = '<p class="tryon-browse-loading">Loading&hellip;</p>';
         browseCursor = null;
-        browseActiveSeason = season;
+        browseActiveSeason = handle;
       }
 
       var query =
@@ -359,10 +349,7 @@
       });
 
       if (tabButtons.length) {
-        var preferred = tabButtons.filter(function (btn) {
-          return btn.getAttribute('data-tryon-season-tab') === currentSeason();
-        });
-        activateSeason((preferred[0] || tabButtons[0]).getAttribute('data-tryon-season-tab'));
+        activateSeason(tabButtons[0].getAttribute('data-tryon-season-tab'));
       }
     }
 
