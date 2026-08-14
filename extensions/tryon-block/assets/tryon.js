@@ -67,6 +67,7 @@
     var searchResultsEl = block.querySelector('[data-tryon-search-results]');
     var seasonTabsEl = block.querySelector('[data-tryon-season-tabs]');
     var browseGridEl = block.querySelector('[data-tryon-browse-grid]');
+    var loadMoreBtn = block.querySelector('[data-tryon-load-more]');
 
     var steps = {};
     block.querySelectorAll('[data-tryon-step]').forEach(function (el) {
@@ -180,7 +181,7 @@
 
     function searchProducts(queryText) {
       var query =
-        'query($q: String!) { products(first: 6, query: $q) { edges { node { id title featuredImage { url } } } } }';
+        'query($q: String!) { products(first: 20, query: $q) { edges { node { id title featuredImage { url } } } } }';
       return storefrontFetch(storefrontToken, query, { q: queryText }).then(function (data) {
         var edges = (data.data && data.data.products && data.data.products.edges) || [];
         return mapProductEdges(edges).filter(function (item) {
@@ -248,9 +249,11 @@
 
     // --- Browse grid (wardrobe-page mode only) ---
 
-    function renderBrowseGrid(items) {
+    var browseCursor = null;
+    var browseActiveSeason = null;
+
+    function appendBrowseTiles(items) {
       if (!browseGridEl) return;
-      browseGridEl.innerHTML = '';
       items.forEach(function (item) {
         var tile = document.createElement('button');
         tile.type = 'button';
@@ -275,25 +278,43 @@
       });
     }
 
-    function loadSeasonCollection(season) {
+    function loadSeasonCollection(season, append) {
       if (!browseGridEl) return;
       var handle = block.getAttribute('data-collection-' + season);
       if (!handle) return;
 
-      browseGridEl.innerHTML = '<p class="tryon-browse-loading">Loading&hellip;</p>';
+      if (!append) {
+        browseGridEl.innerHTML = '<p class="tryon-browse-loading">Loading&hellip;</p>';
+        browseCursor = null;
+        browseActiveSeason = season;
+      }
 
       var query =
-        'query($handle: String!) { collectionByHandle(handle: $handle) { products(first: 12) { edges { node { id title featuredImage { url } } } } } }';
+        'query($handle: String!, $after: String) { collectionByHandle(handle: $handle) { products(first: 24, after: $after) { edges { cursor node { id title featuredImage { url } } } pageInfo { hasNextPage } } } }';
 
-      storefrontFetch(storefrontToken, query, { handle: handle })
+      storefrontFetch(storefrontToken, query, { handle: handle, after: browseCursor })
         .then(function (data) {
-          var collection = data.data && data.data.collectionByHandle;
-          var edges = (collection && collection.products && collection.products.edges) || [];
-          renderBrowseGrid(mapProductEdges(edges));
+          var connection = data.data && data.data.collectionByHandle && data.data.collectionByHandle.products;
+          var edges = (connection && connection.edges) || [];
+
+          if (!append) browseGridEl.innerHTML = '';
+          appendBrowseTiles(mapProductEdges(edges));
+
+          if (edges.length) browseCursor = edges[edges.length - 1].cursor;
+          var hasNext = !!(connection && connection.pageInfo && connection.pageInfo.hasNextPage);
+          if (loadMoreBtn) loadMoreBtn.hidden = !hasNext;
         })
         .catch(function () {
-          browseGridEl.innerHTML = '<p class="tryon-browse-loading">Could not load items. Please try again.</p>';
+          if (!append) {
+            browseGridEl.innerHTML = '<p class="tryon-browse-loading">Could not load items. Please try again.</p>';
+          }
         });
+    }
+
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', function () {
+        if (browseActiveSeason) loadSeasonCollection(browseActiveSeason, true);
+      });
     }
 
     if (seasonTabsEl) {
@@ -303,7 +324,7 @@
         tabButtons.forEach(function (btn) {
           btn.classList.toggle('is-active', btn.getAttribute('data-tryon-season-tab') === season);
         });
-        loadSeasonCollection(season);
+        loadSeasonCollection(season, false);
       }
 
       tabButtons.forEach(function (btn) {

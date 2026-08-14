@@ -389,6 +389,26 @@
   gap: 1rem;
 }
 
+.tryon-load-more-btn {
+  display: block;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+  height: 46px;
+  font-family: inherit;
+  font-size: 0.85em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--tryon-accent);
+  border: 2px solid var(--tryon-accent);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.tryon-load-more-btn[hidden] {
+  display: none;
+}
+
 .tryon-browse-loading {
   grid-column: 1 / -1;
   opacity: 0.7;
