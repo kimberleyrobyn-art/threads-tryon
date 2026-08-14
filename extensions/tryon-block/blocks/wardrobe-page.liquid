@@ -18,6 +18,7 @@
   data-collection-summer="{{ block.settings.collection_summer.handle }}"
   data-collection-fall="{{ block.settings.collection_fall.handle }}"
   data-collection-winter="{{ block.settings.collection_winter.handle }}"
+  data-collection-lifestyle="{{ block.settings.collection_lifestyle.handle }}"
 >
   <h1 class="tryon-wardrobe-heading">{{ block.settings.heading | default: 'Build Your Outfit' }}</h1>
   {% if block.settings.subheading != blank %}
@@ -37,6 +38,9 @@
       {% endif %}
       {% if block.settings.collection_winter != blank %}
         <button type="button" class="tryon-season-tab" data-tryon-season-tab="winter">Winter</button>
+      {% endif %}
+      {% if block.settings.collection_lifestyle != blank %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="lifestyle">Lifestyle</button>
       {% endif %}
     </div>
 
@@ -148,6 +152,12 @@
       "type": "collection",
       "id": "collection_winter",
       "label": "Winter collection"
+    },
+    {
+      "type": "collection",
+      "id": "collection_lifestyle",
+      "label": "Lifestyle collection",
+      "info": "For non-seasonal categories like yoga/activewear, loungewear, etc."
     }
   ]
 }
