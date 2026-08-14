@@ -1,0 +1,154 @@
+{% comment %}
+  Threads of Creation - standalone "Outfit Builder" page block.
+  Unlike tryon.liquid (which lives on a single product page and pre-selects
+  that product), this is meant to be added to its own dedicated Page --
+  customers browse by season, build an outfit from scratch, and try it on.
+  Renders inline (no popup/modal), since it IS the page content.
+{% endcomment %}
+
+{{ 'tryon.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="tryon-wardrobe"
+  data-tryon-block
+  data-tryon-mode="wardrobe-page"
+  data-storefront-token="{{ block.settings.storefront_api_token }}"
+  data-max-items="{{ block.settings.max_outfit_items }}"
+  data-collection-spring="{{ block.settings.collection_spring.handle }}"
+  data-collection-summer="{{ block.settings.collection_summer.handle }}"
+  data-collection-fall="{{ block.settings.collection_fall.handle }}"
+  data-collection-winter="{{ block.settings.collection_winter.handle }}"
+>
+  <h1 class="tryon-wardrobe-heading">{{ block.settings.heading | default: 'Build Your Outfit' }}</h1>
+  {% if block.settings.subheading != blank %}
+    <p class="tryon-wardrobe-subheading">{{ block.settings.subheading }}</p>
+  {% endif %}
+
+  <div class="tryon-step" data-tryon-step="outfit">
+    <div class="tryon-season-tabs" data-tryon-season-tabs>
+      {% if block.settings.collection_spring != blank %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="spring">Spring</button>
+      {% endif %}
+      {% if block.settings.collection_summer != blank %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="summer">Summer</button>
+      {% endif %}
+      {% if block.settings.collection_fall != blank %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="fall">Fall</button>
+      {% endif %}
+      {% if block.settings.collection_winter != blank %}
+        <button type="button" class="tryon-season-tab" data-tryon-season-tab="winter">Winter</button>
+      {% endif %}
+    </div>
+
+    <div class="tryon-browse-grid" data-tryon-browse-grid></div>
+
+    <div class="tryon-outfit-sidebar">
+      <h2 class="tryon-outfit-sidebar-heading">Your outfit</h2>
+      <div class="tryon-outfit-list" data-tryon-outfit-list></div>
+
+      <div class="tryon-search">
+        <input
+          type="text"
+          class="tryon-search-input"
+          data-tryon-search-input
+          placeholder="Looking for something specific? Search by name..."
+          autocomplete="off"
+        />
+        <div class="tryon-search-results" data-tryon-search-results hidden></div>
+      </div>
+
+      <p class="tryon-error" data-tryon-error-outfit hidden></p>
+
+      <button type="button" class="tryon-upload-btn" data-tryon-continue-btn>
+        Continue
+      </button>
+    </div>
+  </div>
+
+  <div class="tryon-step" data-tryon-step="upload" hidden>
+    <p class="tryon-copy">
+      Upload a clear, well-lit photo of yourself facing the camera. Your
+      photo is sent directly to our try-on provider (FASHN) to generate
+      the preview and is not stored on our servers. FASHN automatically
+      deletes results after 3 days.
+    </p>
+    <input type="file" accept="image/*" data-tryon-file-input hidden />
+    <button type="button" class="tryon-upload-btn" data-tryon-upload-btn>
+      Choose or take a photo
+    </button>
+    <button type="button" class="tryon-back-btn" data-tryon-back-to-outfit>
+      &larr; Back to outfit
+    </button>
+    <p class="tryon-error" data-tryon-error hidden></p>
+  </div>
+
+  <div class="tryon-step" data-tryon-step="loading" hidden>
+    <div class="tryon-spinner" aria-hidden="true"></div>
+    <p data-tryon-loading-text>Generating your try-on&hellip; this can take up to a minute.</p>
+  </div>
+
+  <div class="tryon-step" data-tryon-step="result" hidden>
+    <img class="tryon-result-image" data-tryon-result-image alt="Your outfit" />
+    <div class="tryon-result-actions">
+      <a class="tryon-download-btn" data-tryon-download download="outfit-result.jpg">Save photo</a>
+      <button type="button" class="tryon-retry-btn" data-tryon-retry>Build another outfit</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'tryon.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Outfit Builder page",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Build Your Outfit"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading (optional)"
+    },
+    {
+      "type": "text",
+      "id": "storefront_api_token",
+      "label": "Storefront API public access token",
+      "info": "From Shopify admin → Sales channels → Headless → your storefront → Storefront API."
+    },
+    {
+      "type": "range",
+      "id": "max_outfit_items",
+      "label": "Max items per outfit",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "collection",
+      "id": "collection_spring",
+      "label": "Spring collection"
+    },
+    {
+      "type": "collection",
+      "id": "collection_summer",
+      "label": "Summer collection"
+    },
+    {
+      "type": "collection",
+      "id": "collection_fall",
+      "label": "Fall collection"
+    },
+    {
+      "type": "collection",
+      "id": "collection_winter",
+      "label": "Winter collection"
+    }
+  ]
+}
+{% endschema %}

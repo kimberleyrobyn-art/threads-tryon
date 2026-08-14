@@ -28,7 +28,17 @@
     <div class="tryon-panel-inner" role="dialog" aria-modal="true" aria-label="Virtual try-on">
       <button type="button" class="tryon-close" data-tryon-close aria-label="Close">&times;</button>
 
-      <div class="tryon-step" data-tryon-step="outfit">
+      <div class="tryon-step" data-tryon-step="choice">
+        <p class="tryon-copy">Just try on this item, or build a full outfit with it?</p>
+        <button type="button" class="tryon-upload-btn" data-tryon-choice-single>
+          Just this item
+        </button>
+        <button type="button" class="tryon-upload-btn" data-tryon-choice-outfit>
+          Build an outfit
+        </button>
+      </div>
+
+      <div class="tryon-step" data-tryon-step="outfit" hidden>
         <p class="tryon-copy">Build your outfit, then try it on.</p>
 
         <div class="tryon-outfit-list" data-tryon-outfit-list></div>

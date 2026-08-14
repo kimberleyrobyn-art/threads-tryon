@@ -5,10 +5,53 @@
   var SEARCH_DEBOUNCE_MS = 300;
   var STOREFRONT_API_VERSION = '2025-10';
 
+  function storefrontUrl() {
+    return window.location.origin + '/api/' + STOREFRONT_API_VERSION + '/graphql.json';
+  }
+
+  function storefrontFetch(token, query, variables) {
+    return fetch(storefrontUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': token,
+      },
+      body: JSON.stringify({ query: query, variables: variables }),
+    }).then(function (res) {
+      return res.json();
+    });
+  }
+
+  function mapProductEdges(edges) {
+    return edges
+      .map(function (edge) {
+        return {
+          id: edge.node.id,
+          title: edge.node.title,
+          imageUrl: edge.node.featuredImage ? edge.node.featuredImage.url : null,
+        };
+      })
+      .filter(function (item) {
+        return !!item.imageUrl;
+      });
+  }
+
+  function currentSeason() {
+    var month = new Date().getMonth(); // 0 = Jan
+    if (month >= 2 && month <= 4) return 'spring';
+    if (month >= 5 && month <= 7) return 'summer';
+    if (month >= 8 && month <= 10) return 'fall';
+    return 'winter';
+  }
+
   function initBlock(block) {
+    var mode = block.getAttribute('data-tryon-mode') === 'wardrobe-page' ? 'wardrobe-page' : 'product';
+
     var trigger = block.querySelector('[data-tryon-trigger]');
     var panel = block.querySelector('[data-tryon-panel]');
     var closeBtn = block.querySelector('[data-tryon-close]');
+    var choiceSingleBtn = block.querySelector('[data-tryon-choice-single]');
+    var choiceOutfitBtn = block.querySelector('[data-tryon-choice-outfit]');
     var fileInput = block.querySelector('[data-tryon-file-input]');
     var uploadBtn = block.querySelector('[data-tryon-upload-btn]');
     var backToOutfitBtn = block.querySelector('[data-tryon-back-to-outfit]');
@@ -22,23 +65,26 @@
     var outfitListEl = block.querySelector('[data-tryon-outfit-list]');
     var searchInput = block.querySelector('[data-tryon-search-input]');
     var searchResultsEl = block.querySelector('[data-tryon-search-results]');
+    var seasonTabsEl = block.querySelector('[data-tryon-season-tabs]');
+    var browseGridEl = block.querySelector('[data-tryon-browse-grid]');
 
-    var steps = {
-      outfit: block.querySelector('[data-tryon-step="outfit"]'),
-      upload: block.querySelector('[data-tryon-step="upload"]'),
-      loading: block.querySelector('[data-tryon-step="loading"]'),
-      result: block.querySelector('[data-tryon-step="result"]'),
-    };
+    var steps = {};
+    block.querySelectorAll('[data-tryon-step]').forEach(function (el) {
+      steps[el.getAttribute('data-tryon-step')] = el;
+    });
+
+    var storefrontToken = block.getAttribute('data-storefront-token');
+    var maxItems = parseInt(block.getAttribute('data-max-items'), 10) || 3;
 
     var currentProductId = block.getAttribute('data-product-id');
     var currentProductImage = block.getAttribute('data-product-image');
     var currentProductTitle = block.getAttribute('data-product-title');
-    var storefrontToken = block.getAttribute('data-storefront-token');
-    var maxItems = parseInt(block.getAttribute('data-max-items'), 10) || 3;
+    var currentProductItem =
+      mode === 'product' && currentProductImage
+        ? { id: currentProductId, title: currentProductTitle, imageUrl: currentProductImage }
+        : null;
 
-    var outfitItems = currentProductImage
-      ? [{ id: currentProductId, title: currentProductTitle, imageUrl: currentProductImage }]
-      : [];
+    var outfitItems = [];
     var searchDebounceTimer = null;
 
     function showStep(name) {
@@ -48,33 +94,54 @@
     }
 
     function showError(el, message) {
+      if (!el) return;
       el.textContent = message;
       el.hidden = false;
     }
 
     function clearError(el) {
+      if (!el) return;
       el.hidden = true;
       el.textContent = '';
     }
 
     function openPanel() {
+      if (!panel) return;
       panel.hidden = false;
       document.body.style.overflow = 'hidden';
     }
 
     function closePanel() {
+      if (!panel) return;
       panel.hidden = true;
       document.body.style.overflow = '';
     }
 
-    function resetToOutfit() {
+    function resetToStart() {
       clearError(errorEl);
       clearError(outfitErrorEl);
-      fileInput.value = '';
-      showStep('outfit');
+      if (fileInput) fileInput.value = '';
+      showStep(mode === 'product' ? 'choice' : 'outfit');
     }
 
-    // --- Outfit list rendering ---
+    // --- Outfit list rendering (shared) ---
+
+    function isInOutfit(id) {
+      return outfitItems.some(function (existing) {
+        return existing.id === id;
+      });
+    }
+
+    function addOutfitItem(item) {
+      if (isInOutfit(item.id)) return;
+      if (outfitItems.length >= maxItems) {
+        showError(outfitErrorEl, 'You can try on up to ' + maxItems + ' items at once.');
+        return;
+      }
+      clearError(outfitErrorEl);
+      outfitItems.push(item);
+      renderOutfitList();
+    }
 
     function renderOutfitList() {
       outfitListEl.innerHTML = '';
@@ -109,40 +176,17 @@
       });
     }
 
-    // --- Storefront API search ---
+    // --- Storefront API search (shared) ---
 
     function searchProducts(queryText) {
-      var url = window.location.origin + '/api/' + STOREFRONT_API_VERSION + '/graphql.json';
       var query =
         'query($q: String!) { products(first: 6, query: $q) { edges { node { id title featuredImage { url } } } } }';
-
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': storefrontToken,
-        },
-        body: JSON.stringify({ query: query, variables: { q: queryText } }),
-      })
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (data) {
-          var edges = (data.data && data.data.products && data.data.products.edges) || [];
-          return edges
-            .map(function (edge) {
-              return {
-                id: edge.node.id,
-                title: edge.node.title,
-                imageUrl: edge.node.featuredImage ? edge.node.featuredImage.url : null,
-              };
-            })
-            .filter(function (item) {
-              return item.imageUrl && !outfitItems.some(function (existing) {
-                return existing.id === item.id;
-              });
-            });
+      return storefrontFetch(storefrontToken, query, { q: queryText }).then(function (data) {
+        var edges = (data.data && data.data.products && data.data.products.edges) || [];
+        return mapProductEdges(edges).filter(function (item) {
+          return !isInOutfit(item.id);
         });
+      });
     }
 
     function renderSearchResults(results) {
@@ -166,13 +210,7 @@
         row.appendChild(title);
 
         row.addEventListener('click', function () {
-          if (outfitItems.length >= maxItems) {
-            showError(outfitErrorEl, 'You can try on up to ' + maxItems + ' items at once.');
-            return;
-          }
-          clearError(outfitErrorEl);
-          outfitItems.push(item);
-          renderOutfitList();
+          addOutfitItem(item);
           searchInput.value = '';
           searchResultsEl.hidden = true;
           searchResultsEl.innerHTML = '';
@@ -183,86 +221,191 @@
       searchResultsEl.hidden = false;
     }
 
-    searchInput.addEventListener('input', function () {
-      var value = searchInput.value.trim();
-      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        var value = searchInput.value.trim();
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
 
-      if (!value) {
-        searchResultsEl.hidden = true;
-        searchResultsEl.innerHTML = '';
-        return;
+        if (!value) {
+          searchResultsEl.hidden = true;
+          searchResultsEl.innerHTML = '';
+          return;
+        }
+        if (!storefrontToken) {
+          showError(outfitErrorEl, 'Search is not configured for this store yet.');
+          return;
+        }
+
+        searchDebounceTimer = setTimeout(function () {
+          searchProducts(value)
+            .then(renderSearchResults)
+            .catch(function () {
+              showError(outfitErrorEl, 'Search failed. Please try again.');
+            });
+        }, SEARCH_DEBOUNCE_MS);
+      });
+    }
+
+    // --- Browse grid (wardrobe-page mode only) ---
+
+    function renderBrowseGrid(items) {
+      if (!browseGridEl) return;
+      browseGridEl.innerHTML = '';
+      items.forEach(function (item) {
+        var tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = 'tryon-browse-tile';
+        if (isInOutfit(item.id)) tile.classList.add('is-added');
+
+        var img = document.createElement('img');
+        img.src = item.imageUrl;
+        img.alt = item.title;
+        tile.appendChild(img);
+
+        var title = document.createElement('span');
+        title.textContent = item.title;
+        tile.appendChild(title);
+
+        tile.addEventListener('click', function () {
+          addOutfitItem(item);
+          tile.classList.add('is-added');
+        });
+
+        browseGridEl.appendChild(tile);
+      });
+    }
+
+    function loadSeasonCollection(season) {
+      if (!browseGridEl) return;
+      var handle = block.getAttribute('data-collection-' + season);
+      if (!handle) return;
+
+      browseGridEl.innerHTML = '<p class="tryon-browse-loading">Loading&hellip;</p>';
+
+      var query =
+        'query($handle: String!) { collectionByHandle(handle: $handle) { products(first: 12) { edges { node { id title featuredImage { url } } } } } }';
+
+      storefrontFetch(storefrontToken, query, { handle: handle })
+        .then(function (data) {
+          var collection = data.data && data.data.collectionByHandle;
+          var edges = (collection && collection.products && collection.products.edges) || [];
+          renderBrowseGrid(mapProductEdges(edges));
+        })
+        .catch(function () {
+          browseGridEl.innerHTML = '<p class="tryon-browse-loading">Could not load items. Please try again.</p>';
+        });
+    }
+
+    if (seasonTabsEl) {
+      var tabButtons = Array.prototype.slice.call(seasonTabsEl.querySelectorAll('[data-tryon-season-tab]'));
+
+      function activateSeason(season) {
+        tabButtons.forEach(function (btn) {
+          btn.classList.toggle('is-active', btn.getAttribute('data-tryon-season-tab') === season);
+        });
+        loadSeasonCollection(season);
       }
-      if (!storefrontToken) {
-        showError(outfitErrorEl, 'Search is not configured for this store yet.');
-        return;
+
+      tabButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          activateSeason(btn.getAttribute('data-tryon-season-tab'));
+        });
+      });
+
+      if (tabButtons.length) {
+        var preferred = tabButtons.filter(function (btn) {
+          return btn.getAttribute('data-tryon-season-tab') === currentSeason();
+        });
+        activateSeason((preferred[0] || tabButtons[0]).getAttribute('data-tryon-season-tab'));
       }
+    }
 
-      searchDebounceTimer = setTimeout(function () {
-        searchProducts(value)
-          .then(renderSearchResults)
-          .catch(function () {
-            showError(outfitErrorEl, 'Search failed. Please try again.');
-          });
-      }, SEARCH_DEBOUNCE_MS);
-    });
+    // --- Choice step (product mode only) ---
 
-    continueBtn.addEventListener('click', function () {
-      if (!outfitItems.length) {
-        showError(outfitErrorEl, 'Add at least one item to try on.');
-        return;
-      }
-      clearError(outfitErrorEl);
-      showStep('upload');
-    });
+    if (choiceSingleBtn) {
+      choiceSingleBtn.addEventListener('click', function () {
+        outfitItems = currentProductItem ? [currentProductItem] : [];
+        renderOutfitList();
+        showStep('upload');
+      });
+    }
+    if (choiceOutfitBtn) {
+      choiceOutfitBtn.addEventListener('click', function () {
+        showStep('outfit');
+      });
+    }
 
-    backToOutfitBtn.addEventListener('click', function () {
-      clearError(errorEl);
-      showStep('outfit');
-    });
+    if (continueBtn) {
+      continueBtn.addEventListener('click', function () {
+        if (!outfitItems.length) {
+          showError(outfitErrorEl, 'Add at least one item to try on.');
+          return;
+        }
+        clearError(outfitErrorEl);
+        showStep('upload');
+      });
+    }
 
-    // --- Panel open/close ---
+    if (backToOutfitBtn) {
+      backToOutfitBtn.addEventListener('click', function () {
+        clearError(errorEl);
+        showStep('outfit');
+      });
+    }
 
-    trigger.addEventListener('click', function () {
-      renderOutfitList();
-      openPanel();
-    });
+    // --- Panel open/close (product mode only) ---
 
-    closeBtn.addEventListener('click', closePanel);
-    panel.addEventListener('click', function (event) {
-      if (event.target === panel) closePanel();
-    });
+    if (trigger) {
+      trigger.addEventListener('click', function () {
+        outfitItems = currentProductItem ? [currentProductItem] : [];
+        renderOutfitList();
+        showStep('choice');
+        openPanel();
+      });
+    }
 
-    uploadBtn.addEventListener('click', function () {
-      fileInput.click();
-    });
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    if (panel) {
+      panel.addEventListener('click', function (event) {
+        if (event.target === panel) closePanel();
+      });
+    }
 
-    retryBtn.addEventListener('click', resetToOutfit);
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', function () {
+        fileInput.click();
+      });
+    }
 
-    // --- Upload handling ---
+    if (retryBtn) retryBtn.addEventListener('click', resetToStart);
 
-    fileInput.addEventListener('change', function () {
-      clearError(errorEl);
-      var file = fileInput.files && fileInput.files[0];
-      if (!file) return;
+    // --- Upload handling (shared) ---
 
-      if (!file.type.startsWith('image/')) {
-        showError(errorEl, 'Please choose an image file.');
-        return;
-      }
-      if (file.size > MAX_FILE_BYTES) {
-        showError(errorEl, 'That photo is too large. Please choose one under 8MB.');
-        return;
-      }
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        clearError(errorEl);
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
 
-      var reader = new FileReader();
-      reader.onload = function () {
-        generateOutfit(reader.result);
-      };
-      reader.onerror = function () {
-        showError(errorEl, 'Could not read that photo. Please try another.');
-      };
-      reader.readAsDataURL(file);
-    });
+        if (!file.type.startsWith('image/')) {
+          showError(errorEl, 'Please choose an image file.');
+          return;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+          showError(errorEl, 'That photo is too large. Please choose one under 8MB.');
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function () {
+          generateOutfit(reader.result);
+        };
+        reader.onerror = function () {
+          showError(errorEl, 'Could not read that photo. Please try another.');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     // --- Generation (sequential across outfit items) ---
 
@@ -271,13 +414,12 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model_image: modelImage, product_image: productImage }),
-      })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            if (!res.ok) throw new Error(data.error || 'Failed to start try-on.');
-            return data.id;
-          });
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || 'Failed to start try-on.');
+          return data.id;
         });
+      });
     }
 
     function pollUntilComplete(id, startedAt) {
@@ -322,10 +464,12 @@
           return;
         }
         var item = outfitItems[index];
-        loadingText.textContent =
-          outfitItems.length > 1
-            ? 'Applying item ' + (index + 1) + ' of ' + outfitItems.length + '…'
-            : 'Generating your try-on… this can take up to a minute.';
+        if (loadingText) {
+          loadingText.textContent =
+            outfitItems.length > 1
+              ? 'Applying item ' + (index + 1) + ' of ' + outfitItems.length + '…'
+              : 'Generating your try-on… this can take up to a minute.';
+        }
 
         startTryOnStep(modelImage, item.imageUrl)
           .then(function (id) {
@@ -337,7 +481,7 @@
             next();
           })
           .catch(function (err) {
-            resetToOutfit();
+            resetToStart();
             showStep('upload');
             showError(errorEl, err.message || 'Something went wrong. Please try again.');
           });

@@ -6,22 +6,26 @@
  * inherited automatically (Shopify themes don't expose a standard set of
  * CSS variable names we can rely on across themes).
  */
-.tryon-block {
+.tryon-block,
+.tryon-wardrobe {
   --tryon-accent: #9c7d3b;
   --tryon-text: #502807;
   --tryon-bg: #f8edd4;
-  margin: 1rem 0;
   font-family: inherit;
+}
+
+.tryon-block {
+  margin: 1rem 0;
 }
 
 .tryon-trigger {
   display: inline-block;
   width: 100%;
   padding: 0 1rem;
-  height: 45px;
-  line-height: 41px;
+  height: 48px;
+  line-height: 44px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -56,24 +60,25 @@
 .tryon-panel-inner {
   position: relative;
   width: 100%;
-  max-width: 420px;
-  max-height: 90vh;
+  max-width: 560px;
+  max-height: 92vh;
   overflow-y: auto;
   background: var(--tryon-bg);
   color: var(--tryon-text);
-  border-radius: 4px;
-  padding: 2.5rem 1.75rem 1.75rem;
+  border-radius: 6px;
+  padding: 3rem 2.25rem 2.25rem;
   box-sizing: border-box;
   text-align: center;
+  font-size: 17px;
 }
 
 .tryon-close {
   position: absolute;
-  top: 0.75rem;
-  right: 1rem;
+  top: 0.85rem;
+  right: 1.1rem;
   background: none;
   border: none;
-  font-size: 1.75rem;
+  font-size: 2rem;
   line-height: 1;
   cursor: pointer;
   color: var(--tryon-text);
@@ -89,21 +94,21 @@
 }
 
 .tryon-copy {
-  font-size: 0.85em;
-  line-height: 1.5;
+  font-size: 1em;
+  line-height: 1.6;
   color: var(--tryon-text);
-  opacity: 0.85;
+  opacity: 0.9;
   margin-bottom: 1.5rem;
 }
 
 .tryon-upload-btn,
 .tryon-retry-btn {
   display: inline-block;
-  padding: 0 1.25rem;
-  height: 45px;
-  line-height: 41px;
+  padding: 0 1.5rem;
+  height: 50px;
+  line-height: 46px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -124,12 +129,12 @@
 .tryon-error {
   margin-top: 1.25rem;
   color: #b00020;
-  font-size: 0.85em;
+  font-size: 0.9em;
 }
 
 .tryon-spinner {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   margin: 0 auto 1.25rem;
   border: 3px solid rgba(156, 125, 59, 0.25);
   border-top-color: var(--tryon-accent);
@@ -160,10 +165,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 1.25rem;
-  height: 45px;
+  padding: 0 1.5rem;
+  height: 50px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -174,14 +179,20 @@
   border-radius: 2px;
 }
 
+[data-tryon-step="choice"] .tryon-upload-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
 .tryon-back-btn {
   display: block;
-  margin: 0.75rem auto 0;
+  margin: 0.85rem auto 0;
   background: none;
   border: none;
   color: var(--tryon-accent);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 0.85em;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -189,24 +200,24 @@
 .tryon-outfit-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
   text-align: left;
 }
 
 .tryon-outfit-item {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem;
+  gap: 0.7rem;
+  padding: 0.5rem;
   border: 1px solid rgba(156, 125, 59, 0.35);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.4);
 }
 
 .tryon-outfit-item img {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   object-fit: cover;
   border-radius: 3px;
   flex-shrink: 0;
@@ -214,8 +225,8 @@
 
 .tryon-outfit-item-title {
   flex: 1;
-  font-size: 0.8em;
-  line-height: 1.3;
+  font-size: 0.9em;
+  line-height: 1.35;
 }
 
 .tryon-outfit-item-remove {
@@ -223,7 +234,7 @@
   border: none;
   color: var(--tryon-text);
   opacity: 0.6;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
   padding: 0 0.25rem;
@@ -243,9 +254,9 @@
 .tryon-search-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem 0.9rem;
   font-family: inherit;
-  font-size: 0.85em;
+  font-size: 0.95em;
   border: 1px solid rgba(156, 125, 59, 0.5);
   border-radius: 4px;
   background: #fff;
@@ -258,7 +269,7 @@
   right: 0;
   top: calc(100% + 4px);
   z-index: 10;
-  max-height: 240px;
+  max-height: 280px;
   overflow-y: auto;
   background: #fff;
   border: 1px solid rgba(156, 125, 59, 0.5);
@@ -273,16 +284,16 @@
 .tryon-search-result {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.7rem;
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.9rem;
   background: none;
   border: none;
   border-bottom: 1px solid rgba(156, 125, 59, 0.15);
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  font-size: 0.8em;
+  font-size: 0.9em;
   color: var(--tryon-text);
 }
 
@@ -295,9 +306,140 @@
 }
 
 .tryon-search-result img {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   object-fit: cover;
   border-radius: 3px;
   flex-shrink: 0;
+}
+
+/* --- Standalone Outfit Builder page (extensions/tryon-block/blocks/wardrobe-page.liquid) --- */
+
+.tryon-wardrobe {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  color: var(--tryon-text);
+  font-size: 17px;
+}
+
+.tryon-wardrobe .tryon-step[hidden] {
+  display: none;
+}
+
+.tryon-wardrobe-heading {
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 2em;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.tryon-wardrobe-subheading {
+  text-align: center;
+  opacity: 0.85;
+  margin: 0 0 2rem;
+}
+
+.tryon-wardrobe [data-tryon-step="outfit"] {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 800px) {
+  .tryon-wardrobe [data-tryon-step="outfit"] {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+.tryon-season-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.tryon-season-tab {
+  padding: 0.6rem 1.1rem;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--tryon-text);
+  opacity: 0.6;
+  border: 1px solid rgba(156, 125, 59, 0.4);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.tryon-season-tab.is-active {
+  opacity: 1;
+  background: var(--tryon-accent);
+  color: #fff;
+  border-color: var(--tryon-accent);
+}
+
+.tryon-browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.tryon-browse-loading {
+  grid-column: 1 / -1;
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.tryon-browse-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: var(--tryon-text);
+}
+
+.tryon-browse-tile img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 2px solid transparent;
+}
+
+.tryon-browse-tile.is-added img {
+  border-color: var(--tryon-accent);
+}
+
+.tryon-browse-tile span {
+  font-size: 0.8em;
+  line-height: 1.3;
+}
+
+.tryon-outfit-sidebar {
+  text-align: left;
+}
+
+.tryon-outfit-sidebar-heading {
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 1.15em;
+  margin: 0 0 1rem;
+}
+
+.tryon-wardrobe [data-tryon-step="upload"],
+.tryon-wardrobe [data-tryon-step="loading"],
+.tryon-wardrobe [data-tryon-step="result"] {
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
 }
