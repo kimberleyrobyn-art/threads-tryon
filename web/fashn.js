@@ -4,6 +4,10 @@
 // web/test-fashn.js: model_image / product_image are correct for the
 // tryon-max model. tryon-max does NOT accept a "category" input -- it
 // auto-detects the garment type; passing one returns a 400.
+//
+// generation_mode: "fast" verified working the same day -- cuts per-item
+// time roughly in half (documented ~10s vs ~25s "balanced" default),
+// which matters a lot once outfits chain multiple sequential generations.
 
 const FASHN_BASE_URL = 'https://api.fashn.ai/v1';
 
@@ -29,6 +33,7 @@ async function runTryon({ modelImage, productImage }) {
       inputs: {
         model_image: modelImage,
         product_image: productImage,
+        generation_mode: 'fast',
       },
     }),
   });

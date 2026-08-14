@@ -61,6 +61,7 @@
 
     var trigger = block.querySelector('[data-tryon-trigger]');
     var panel = block.querySelector('[data-tryon-panel]');
+    var panelInner = block.querySelector('.tryon-panel-inner');
     var closeBtn = block.querySelector('[data-tryon-close]');
     var choiceSingleBtn = block.querySelector('[data-tryon-choice-single]');
     var choiceOutfitBtn = block.querySelector('[data-tryon-choice-outfit]');
@@ -109,6 +110,14 @@
       Object.keys(steps).forEach(function (key) {
         steps[key].hidden = key !== name;
       });
+      // Switching steps (e.g. to the result image) without resetting scroll
+      // left users stuck scrolled down from a previous step, unable to see
+      // the top of the new content (like the model's head in the result).
+      if (panelInner) {
+        panelInner.scrollTop = 0;
+      } else {
+        window.scrollTo({ top: block.getBoundingClientRect().top + window.scrollY - 20, behavior: 'auto' });
+      }
     }
 
     function showError(el, message) {

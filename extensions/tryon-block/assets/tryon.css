@@ -69,6 +69,7 @@
   max-width: 560px;
   max-height: 92vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--tryon-bg);
   color: var(--tryon-text);
   border-radius: 6px;
