@@ -407,6 +407,52 @@
   border-color: var(--tryon-accent);
 }
 
+/* Season-specific accent colors, keyed to the collection handle each tab
+   was generated from (see wardrobe-page.liquid's browse_collections loop). */
+.tryon-season-tab[data-tryon-season-tab="spring"] {
+  border-color: #8ba888;
+}
+.tryon-season-tab[data-tryon-season-tab="spring"]:hover {
+  color: #6f8a6c;
+}
+.tryon-season-tab[data-tryon-season-tab="spring"].is-active {
+  background: #8ba888;
+  border-color: #8ba888;
+}
+
+.tryon-season-tab[data-tryon-season-tab="summer"] {
+  border-color: #e0a458;
+}
+.tryon-season-tab[data-tryon-season-tab="summer"]:hover {
+  color: #c98a3a;
+}
+.tryon-season-tab[data-tryon-season-tab="summer"].is-active {
+  background: #e0a458;
+  border-color: #e0a458;
+}
+
+.tryon-season-tab[data-tryon-season-tab="fall"] {
+  border-color: #b5651d;
+}
+.tryon-season-tab[data-tryon-season-tab="fall"]:hover {
+  color: #9c5518;
+}
+.tryon-season-tab[data-tryon-season-tab="fall"].is-active {
+  background: #b5651d;
+  border-color: #b5651d;
+}
+
+.tryon-season-tab[data-tryon-season-tab="winter"] {
+  border-color: #6b8caf;
+}
+.tryon-season-tab[data-tryon-season-tab="winter"]:hover {
+  color: #567296;
+}
+.tryon-season-tab[data-tryon-season-tab="winter"].is-active {
+  background: #6b8caf;
+  border-color: #6b8caf;
+}
+
 .tryon-browse-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
