@@ -24,7 +24,20 @@
     <div class="tryon-browse-column">
       <div class="tryon-season-tabs" data-tryon-season-tabs>
         {% for collection in block.settings.browse_collections %}
-          <button type="button" class="tryon-season-tab" data-tryon-season-tab="{{ collection.handle }}">{{ collection.title }}</button>
+          {% case collection.handle %}
+            {% when 'spring' %}{% assign tab_color = block.settings.tab_color_spring %}
+            {% when 'summer' %}{% assign tab_color = block.settings.tab_color_summer %}
+            {% when 'fall' %}{% assign tab_color = block.settings.tab_color_fall %}
+            {% when 'winter', 'winter-1' %}{% assign tab_color = block.settings.tab_color_winter %}
+            {% when 'lifestyle', 'lifestyle-1' %}{% assign tab_color = block.settings.tab_color_lifestyle %}
+            {% else %}{% assign tab_color = block.settings.tab_color_default %}
+          {% endcase %}
+          <button
+            type="button"
+            class="tryon-season-tab"
+            data-tryon-season-tab="{{ collection.handle }}"
+            style="--tab-color: {{ tab_color }};"
+          >{{ collection.title }}</button>
         {% endfor %}
       </div>
 
@@ -124,6 +137,46 @@
       "id": "browse_collections",
       "label": "Browse tabs",
       "info": "One tab per collection, shown in this order. Name your collections however you like (e.g. Spring, Summer, Yoga) -- the tab label is just the collection's title."
+    },
+    {
+      "type": "header",
+      "content": "Tab colors"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_spring",
+      "label": "Spring",
+      "default": "#8ba888"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_summer",
+      "label": "Summer",
+      "default": "#e0a458"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_fall",
+      "label": "Fall",
+      "default": "#b5651d"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_winter",
+      "label": "Winter",
+      "default": "#6b8caf"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_lifestyle",
+      "label": "Lifestyle",
+      "default": "#9c7d3b"
+    },
+    {
+      "type": "color",
+      "id": "tab_color_default",
+      "label": "Any other tab (Men, Women, All Apparel, etc.)",
+      "default": "#9c7d3b"
     }
   ]
 }
