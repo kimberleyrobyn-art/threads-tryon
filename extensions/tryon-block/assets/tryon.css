@@ -396,10 +396,6 @@
   transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
-.tryon-season-tab:hover {
-  opacity: 0.85;
-}
-
 .tryon-season-tab.is-active {
   opacity: 1;
   background: var(--tryon-accent);
@@ -409,9 +405,17 @@
 
 /* Per-tab color, set inline by wardrobe-page.liquid from the block's own
    color-picker settings (Settings > Tab colors) -- falls back to the
-   plain gold accent if a tab has no --tab-color set for some reason. */
+   plain gold accent if a tab has no --tab-color set for some reason.
+   Hover fills in the same color as active, so customers see the season
+   color before committing to a click, not just a dimmed/undimmed state. */
 .tryon-season-tab {
   border-color: var(--tab-color, rgba(156, 125, 59, 0.4));
+}
+.tryon-season-tab:hover {
+  opacity: 1;
+  background: var(--tab-color, var(--tryon-accent));
+  border-color: var(--tab-color, var(--tryon-accent));
+  color: #fff;
 }
 .tryon-season-tab.is-active {
   background: var(--tab-color, var(--tryon-accent));
