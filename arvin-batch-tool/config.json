@@ -1,0 +1,8 @@
+{
+  "productType": "Clothes",
+  "aspectRatio": "1:1",
+  "inputDir": "./input",
+  "outputDir": "./output",
+  "delayBetweenPhotosMs": 3000,
+  "generateTimeoutMs": 180000
+}

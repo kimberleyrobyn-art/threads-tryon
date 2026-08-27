@@ -1,0 +1,13 @@
+{
+  "name": "arvin-batch-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Batch-uploads product photos to app.arvin.business's AI Model tool and downloads the generated results, so you don't have to upload/pick/generate/download one photo at a time.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node upload-batch.js"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
