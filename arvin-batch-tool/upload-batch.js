@@ -1,13 +1,23 @@
 // Batch-uploads product photos to app.arvin.business's "AI Model" tool.
 //
-// Fully automated: login persistence, navigating to AI Model, picking the
-// product type, uploading each file, clicking Generate, and capturing the
-// downloaded result.
+// Automated: login persistence, navigating to AI Model, picking the
+// product type, uploading each file, picking Model/Pose/Background (by
+// tile position — see selectStylingOption), clicking Generate, and
+// capturing the downloaded result.
 //
-// Left to you (per photo): clicking Model / Pose / Background. Those are
-// unlabeled image tiles on Arvin's site, so there's no reliable text to
-// automate picking them from outside the browser. If Arvin remembers your
-// last picks, this is just pressing Enter each time.
+// With "watch": true in config.json, the script keeps running and polls
+// inputDir on an interval instead of exiting after one pass — point
+// inputDir/outputDir at a folder synced from your iPad (iCloud Drive,
+// Dropbox, etc.) via Files app, leave this running on a Mac/PC, and drop
+// photos in from your iPad whenever. Results show up in outputDir, which
+// syncs back.
+//
+// Model/Pose/Background tiles have no text labels, so "auto-styling" works
+// by clicking the Nth tile under each heading rather than matching by
+// name. It's a best-effort guess at Arvin's page structure (this was
+// written without access to Arvin's actual HTML) — test on 1-2 photos
+// before trusting it on a big batch. Set "autoStyling": false in
+// config.json to go back to picking them yourself each photo.
 //
 // Run with `npm start` from this folder. See README.md for setup.
 
@@ -21,6 +31,7 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const ARVIN_URL = "https://app.arvin.business";
 const PROFILE_DIR = path.join(__dirname, ".browser-profile"); // gitignored, holds your login
+const MANIFEST_PATH = path.join(__dirname, "manifest.json"); // gitignored, tracks what's done
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,6 +40,18 @@ function sleep(ms) {
 function prompt(question) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => rl.question(question, (answer) => { rl.close(); resolve(answer.trim()); }));
+}
+
+function loadManifest() {
+  try {
+    return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+  } catch {
+    return { processed: [], nextStyleIndex: 0 };
+  }
+}
+
+function saveManifest(manifest) {
+  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
 }
 
 async function ensureLoggedIn(page) {
@@ -66,6 +89,40 @@ async function uploadImage(page, filePath) {
   } catch {
     console.log(`  (couldn't select aspect ratio "${config.aspectRatio}" — leaving default)`);
   }
+}
+
+// Clicks the Nth tile in the grid that follows a section heading like
+// "Model" / "Pose" / "Background". Best-effort: assumes the tile grid is
+// a sibling container right after the heading, containing clickable
+// image/button elements in DOM order.
+async function selectStylingOption(page, sectionLabel, optionConfig, styleIndex) {
+  const index = optionConfig.mode === "cycle" ? styleIndex % optionConfig.count : optionConfig.index;
+
+  const heading = page.getByText(sectionLabel, { exact: true }).first();
+  await heading.scrollIntoViewIfNeeded();
+
+  const container = heading.locator("xpath=following-sibling::*[1]");
+  const tiles = container.locator('img, button, [role="button"]');
+
+  const count = await tiles.count();
+  if (count === 0) {
+    throw new Error(`no tiles found under "${sectionLabel}"`);
+  }
+  const clampedIndex = Math.min(index, count - 1);
+
+  const tile = tiles.nth(clampedIndex);
+  await tile.scrollIntoViewIfNeeded();
+  await tile.click({ timeout: 5000 });
+  return clampedIndex;
+}
+
+async function applyStyling(page, styleIndex) {
+  const picks = {};
+  for (const [label, key] of [["Model", "model"], ["Pose", "pose"], ["Background", "background"]]) {
+    const optionConfig = config.styling[key];
+    picks[key] = await selectStylingOption(page, label, optionConfig, styleIndex);
+  }
+  return picks;
 }
 
 async function generateAndDownload(page, outputDir, baseName) {
@@ -111,61 +168,102 @@ async function generateAndDownload(page, outputDir, baseName) {
   return savePath;
 }
 
-async function main() {
-  const inputDir = path.resolve(__dirname, config.inputDir);
-  const outputDir = path.resolve(__dirname, config.outputDir);
-  fs.mkdirSync(outputDir, { recursive: true });
+// Processes one file. Returns true on success (caller marks it done in the
+// manifest), false on failure (caller leaves it to retry next pass).
+async function processFile(page, filePath, outputDir, styleIndex) {
+  const baseName = path.parse(filePath).name;
 
-  const files = fs
-    .readdirSync(inputDir)
-    .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
-    .sort();
+  await goToUploadScreen(page);
+  await uploadImage(page, filePath);
 
-  if (files.length === 0) {
-    console.log(`No image files found in ${inputDir}. Drop some in there (jpg/png/webp) and re-run.`);
-    return;
+  let stylingApplied = false;
+  if (config.autoStyling) {
+    try {
+      const picks = await applyStyling(page, styleIndex);
+      console.log(`  Auto-picked tiles: model[${picks.model}] pose[${picks.pose}] background[${picks.background}]`);
+      stylingApplied = true;
+    } catch (err) {
+      console.log(`  Auto-styling failed (${err.message}).`);
+    }
   }
 
-  console.log(`Found ${files.length} photo(s) to process: ${files.join(", ")}`);
-
-  const context = await chromium.launchPersistentContext(PROFILE_DIR, { headless: false });
-  const page = context.pages()[0] || (await context.newPage());
-
-  await ensureLoggedIn(page);
-
-  let done = 0;
-  let skipped = 0;
-
-  for (const file of files) {
-    const filePath = path.join(inputDir, file);
-    const baseName = path.parse(file).name;
-    console.log(`\n[${done + skipped + 1}/${files.length}] ${file}`);
-
-    await goToUploadScreen(page);
-    await uploadImage(page, filePath);
-
+  if (!stylingApplied) {
     const answer = await prompt(
       "  Pick Model / Pose / Background in the browser, then press Enter to Generate (or 's' to skip this photo): "
     );
     if (answer.toLowerCase() === "s") {
       console.log("  Skipped.");
-      skipped++;
-      continue;
+      return false;
     }
-
-    try {
-      const savedTo = await generateAndDownload(page, outputDir, baseName);
-      console.log(`  Saved: ${savedTo}`);
-      done++;
-    } catch (err) {
-      console.log(`  Failed to generate/download for ${file}: ${err.message}`);
-      console.log("  Moving on to the next photo.");
-    }
-
-    await sleep(config.delayBetweenPhotosMs);
   }
 
-  console.log(`\nDone. ${done} generated, ${skipped} skipped, out of ${files.length}.`);
+  try {
+    const savedTo = await generateAndDownload(page, outputDir, baseName);
+    console.log(`  Saved: ${savedTo}`);
+    return true;
+  } catch (err) {
+    console.log(`  Failed to generate/download: ${err.message}`);
+    return false;
+  }
+}
+
+function listNewFiles(inputDir, processedSet) {
+  return fs
+    .readdirSync(inputDir)
+    .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
+    .filter((f) => !processedSet.has(f))
+    .sort();
+}
+
+async function main() {
+  const inputDir = path.resolve(__dirname, config.inputDir);
+  const outputDir = path.resolve(__dirname, config.outputDir);
+  fs.mkdirSync(inputDir, { recursive: true });
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const manifest = loadManifest();
+  const processedSet = new Set(manifest.processed);
+
+  const context = await chromium.launchPersistentContext(PROFILE_DIR, { headless: false });
+  const page = context.pages()[0] || (await context.newPage());
+  await ensureLoggedIn(page);
+
+  let shuttingDown = false;
+  process.on("SIGINT", () => {
+    console.log("\nShutting down after the current photo...");
+    shuttingDown = true;
+  });
+
+  if (config.autoStyling) {
+    console.log("Auto-styling is ON — Model/Pose/Background will be picked automatically per photo.");
+    console.log("Watch the first couple of photos to make sure it's clicking the right tiles.\n");
+  }
+
+  do {
+    const newFiles = listNewFiles(inputDir, processedSet);
+
+    for (const file of newFiles) {
+      if (shuttingDown) break;
+      console.log(`\n${file} (style index ${manifest.nextStyleIndex})`);
+
+      const ok = await processFile(page, path.join(inputDir, file), outputDir, manifest.nextStyleIndex);
+      processedSet.add(file);
+      manifest.processed.push(file);
+      if (ok) manifest.nextStyleIndex++;
+      saveManifest(manifest);
+
+      await sleep(config.delayBetweenPhotosMs);
+    }
+
+    if (config.watch && !shuttingDown) {
+      if (newFiles.length === 0) {
+        process.stdout.write(".");
+      }
+      await sleep(config.watchIntervalMs);
+    }
+  } while (config.watch && !shuttingDown);
+
+  console.log(`\nDone. ${manifest.processed.length} photo(s) processed total.`);
   await context.close();
 }
 

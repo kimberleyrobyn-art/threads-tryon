@@ -7,15 +7,25 @@ it drives a real Chrome browser window, it's not a headless scraper hitting
 their servers directly.
 
 **What's automated:** logging you in once and remembering it, navigating to
-AI Model, picking the product type, uploading each photo, clicking
-Generate, and downloading the result.
+AI Model, picking the product type, uploading each photo, picking
+Model/Pose/Background, clicking Generate, and downloading the result.
+Kick off a batch and it runs start to finish without you touching it.
 
-**What's still manual, per photo:** clicking Model / Pose / Background.
-Those are unlabeled image tiles, so there's nothing reliable to click by
-text. If Arvin remembers your last picks between photos, this is just
-pressing Enter each time. If it doesn't, you'll re-pick them each round —
-still faster than doing the whole upload/download dance by hand for every
-photo.
+**How Model/Pose/Background picking works:** those are unlabeled image
+tiles, so there's no text to click by name. Instead, the script clicks the
+Nth tile under each heading — e.g. with `pose` set to "cycle", photo 1
+gets the 1st pose tile, photo 2 gets the 2nd, and so on, wrapping around;
+`model`/`background` default to "fixed" at tile 0 so the same model/backdrop
+is used throughout (edit `config.json` to change any of these — see
+"Configuring styling" below).
+
+This was written without being able to see Arvin's actual page code (this
+tool runs from an environment that can't reach `app.arvin.business`), so
+tile-position guessing is the best I could do — **test on 1-2 photos
+first** and watch the browser window to confirm it's clicking the right
+tiles before trusting it on a full batch. Set `"autoStyling": false` in
+`config.json` to fall back to picking them yourself each photo (the script
+will pause and wait for Enter) if the automatic version misclicks.
 
 Note: this is *not* an official Arvin feature — it automates your own
 account through a normal browser. Read `app.arvin.business`'s Terms before
@@ -35,29 +45,89 @@ npx playwright install chromium
 
 ## Usage
 
-1. Drop your product photos into `input/` (jpg/png/webp). Name them
-   however's useful to you — e.g. `sundress-front.jpg`,
-   `sundress-back.jpg`, `sundress-side.jpg`.
-2. Check `config.json`:
+1. Check `config.json`:
    - `productType` — must match one of Arvin's tile labels exactly
      (`Clothes`, `Necklaces`, `Earrings`, `Sunglasses`, `Shoes`, `Rings`,
      `Bracelets`, `Hats`, `Bags`, `Handheld items`, `Wigs`, `Pet wear`).
    - `aspectRatio` — `1:1`, `2:3`, or `3:2`.
+   - `inputDir` / `outputDir` — where photos go in and results come out.
+     See "Running from iPad" below if you want these to be a synced folder.
+   - `watch` — `true` to keep running and pick up new photos as they
+     arrive (see below); `false` to process what's currently in `input/`
+     once and exit.
+   - `watchIntervalMs` — how often to check `input/` for new photos, in
+     watch mode.
    - `delayBetweenPhotosMs` — pause between photos, in milliseconds.
    - `generateTimeoutMs` — how long to wait for a single generation +
      download before giving up on that photo.
-3. Run it:
+   - `autoStyling` / `styling` — see "Configuring styling" below.
+2. Run it:
    ```bash
    npm start
    ```
-4. A browser window opens. First run: log into Arvin manually, then press
+3. A browser window opens. First run: log into Arvin manually, then press
    Enter in the terminal — your session is saved in `.browser-profile/`
    (gitignored) so you won't need to log in again on future runs.
-5. For each photo: the script uploads it and pauses. Pick Model / Pose /
-   Background in the browser, then press Enter in the terminal to
-   Generate. Type `s` + Enter instead to skip that photo.
-6. Results land in `output/`, named
-   `<original-filename>__<arvin's-download-name>`.
+4. Drop photos into `input/` (jpg/png/webp) — before starting, or any time
+   while it's running in watch mode. Name them however's useful, e.g.
+   `sundress-front.jpg`, `sundress-back.jpg`, `sundress-side.jpg`.
+5. Results land in `output/`, named
+   `<original-filename>__<arvin's-download-name>`. A photo is only ever
+   processed once — `manifest.json` (gitignored) tracks what's done, so
+   restarting the script won't redo old photos.
+
+## Configuring styling
+
+`config.json`'s `styling` block controls how Model / Pose / Background get
+picked automatically:
+
+```json
+"styling": {
+  "model":      { "mode": "fixed", "index": 0, "count": 9 },
+  "pose":       { "mode": "cycle", "index": 0, "count": 6 },
+  "background": { "mode": "fixed", "index": 0, "count": 9 }
+}
+```
+
+- `"mode": "fixed"` always clicks the tile at `index` (0 = first tile).
+- `"mode": "cycle"` rotates through tiles `0..count-1` across your batch —
+  e.g. pose "cycle" with `count: 6` gives photo 1 pose #1, photo 2 pose #2,
+  ... photo 7 wraps back to pose #1.
+- `count` should match how many tiles are actually visible under that
+  heading on Arvin's page without scrolling further — check in the
+  browser and adjust if it seems off.
+
+Set `"autoStyling": false` to skip all of this and pick Model/Pose/
+Background yourself each photo instead (the script pauses and waits for
+Enter).
+
+## Running from iPad
+
+Since this script needs a real Mac/PC to drive a browser, the way to use
+it "from iPad" is to make the computer invisible: point `inputDir` and
+`outputDir` at a folder that syncs between your iPad and that computer
+(iCloud Drive, Dropbox, Google Drive — whatever you already have), leave
+the script running on the computer with `"watch": true`, and just drop
+photos into that folder from your iPad's Files app whenever. Results sync
+back to the same place.
+
+Example on a Mac using iCloud Drive — create a folder there, then point
+the config at it with absolute paths:
+
+```json
+"inputDir": "/Users/<you>/Library/Mobile Documents/com~apple~CloudDocs/ArvinBatch/input",
+"outputDir": "/Users/<you>/Library/Mobile Documents/com~apple~CloudDocs/ArvinBatch/output"
+```
+
+On the iPad, the same folder shows up in the Files app under
+**iCloud Drive → ArvinBatch**. Use the Photos app's share sheet →
+"Save to Files" → that folder to drop photos in.
+
+The computer needs to stay on and `npm start` needs to keep running for
+watch mode to pick anything up — it's not a background service that
+survives a reboot on its own. If that becomes annoying, ask about setting
+it up as a `launchd` service (Mac) so it starts automatically and keeps
+running in the background.
 
 ## If a step stops working
 

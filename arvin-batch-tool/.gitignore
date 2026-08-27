@@ -1,5 +1,6 @@
 node_modules/
 .browser-profile/
+manifest.json
 input/*
 !input/.gitkeep
 output/*
