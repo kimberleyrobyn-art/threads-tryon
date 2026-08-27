@@ -82,7 +82,7 @@ async function dismissCookieBanner(page) {
   for (const loc of candidates) {
     if ((await loc.count().catch(() => 0)) > 0) {
       try {
-        await loc.first().click({ timeout: 3000 });
+        await loc.first().click({ force: true, timeout: 3000 });
         return;
       } catch {
         // try the next candidate
@@ -96,7 +96,12 @@ async function goToUploadScreen(page) {
   // than clicking through the nav from whatever screen a previous
   // download left us on — avoids leftover overlays/state blocking clicks.
   await page.goto(AI_MODEL_URL, { waitUntil: "domcontentloaded" });
-  await page.getByText(config.productType, { exact: true }).first().click();
+  const productTile = page.getByText(config.productType, { exact: true }).first();
+  await productTile.waitFor({ timeout: 30000 });
+  // force: true — the text is reliably there, but something in the tile's
+  // layout (likely the thumbnail image on top of it) blocks a normal
+  // click's overlap check. Force bypasses that and clicks through.
+  await productTile.click({ force: true, timeout: 15000 });
   await page.getByText("Upload Image", { exact: true }).first().waitFor({ timeout: 15000 });
 }
 
@@ -121,7 +126,7 @@ async function uploadImage(page, filePath) {
   // Aspect ratio is optional/best-effort — skip quietly if it's not there
   // or the label doesn't match.
   try {
-    await page.getByText(config.aspectRatio, { exact: true }).first().click({ timeout: 5000 });
+    await page.getByText(config.aspectRatio, { exact: true }).first().click({ force: true, timeout: 5000 });
   } catch {
     console.log(`  (couldn't select aspect ratio "${config.aspectRatio}" — leaving default)`);
   }
@@ -148,7 +153,7 @@ async function selectStylingOption(page, sectionLabel, optionConfig, styleIndex)
 
   const tile = tiles.nth(clampedIndex);
   await tile.scrollIntoViewIfNeeded();
-  await tile.click({ timeout: 5000 });
+  await tile.click({ force: true, timeout: 5000 });
   return clampedIndex;
 }
 
@@ -164,7 +169,7 @@ async function applyStyling(page, styleIndex) {
 async function generateAndDownload(page, outputDir, baseName) {
   const downloadPromise = page.waitForEvent("download", { timeout: config.generateTimeoutMs });
 
-  await page.getByText("Generate", { exact: true }).first().click();
+  await page.getByText("Generate", { exact: true }).first().click({ force: true });
 
   // Best-effort: wait for the "Processing..." overlay to appear then clear.
   try {
@@ -186,7 +191,7 @@ async function generateAndDownload(page, outputDir, baseName) {
   for (const loc of candidates) {
     if ((await loc.count().catch(() => 0)) > 0) {
       try {
-        await loc.first().click({ timeout: 5000 });
+        await loc.first().click({ force: true, timeout: 5000 });
         clicked = true;
         break;
       } catch {
