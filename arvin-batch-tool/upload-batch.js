@@ -123,13 +123,13 @@ async function uploadImage(page, filePath) {
   // Preferences panel appearing confirms the upload was accepted.
   await page.getByText("Preferences", { exact: true }).waitFor({ timeout: 30000 });
 
-  // Aspect ratio is optional/best-effort — skip quietly if it's not there
-  // or the label doesn't match.
-  try {
-    await page.getByText(config.aspectRatio, { exact: true }).first().click({ force: true, timeout: 5000 });
-  } catch {
-    console.log(`  (couldn't select aspect ratio "${config.aspectRatio}" — leaving default)`);
-  }
+  // Not clicking an aspect ratio tile here on purpose: Arvin appears to
+  // default to 1:1 already, and a stray force-click on the wrong element
+  // (this ran automatically, before the user gets a chance to pick
+  // Model/Pose/Background themselves) was the likely cause of a reported
+  // bug where the wrong Model/Background got selected. If you need a
+  // non-default aspect ratio, click it yourself along with Model/Pose/
+  // Background during the manual pick step.
 }
 
 // Clicks the Nth tile in the grid that follows a section heading like

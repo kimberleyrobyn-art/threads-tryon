@@ -58,7 +58,9 @@ npx playwright install chromium
    - `productType` — must match one of Arvin's tile labels exactly
      (`Clothes`, `Necklaces`, `Earrings`, `Sunglasses`, `Shoes`, `Rings`,
      `Bracelets`, `Hats`, `Bags`, `Handheld items`, `Wigs`, `Pet wear`).
-   - `aspectRatio` — `1:1`, `2:3`, or `3:2`.
+   - `aspectRatio` — currently unused (see note below); Arvin seems to
+     default to `1:1` on its own. Pick a different one yourself during the
+     manual styling step if you need it.
    - `inputDir` / `outputDir` — where photos go in and results come out.
      See "Running from iPad" below if you want these to be a synced folder.
    - `watch` — `true` to keep running and pick up new photos as they
