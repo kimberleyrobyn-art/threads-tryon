@@ -64,6 +64,26 @@ async function ensureLoggedIn(page) {
   await prompt("Once you're logged in and can see the Home page, press Enter here to continue... ");
 }
 
+// Best-effort: some sites show a cookie/consent banner that sits on top of
+// the page and can silently swallow clicks meant for the real UI. Dismiss
+// it if present; do nothing if not.
+async function dismissCookieBanner(page) {
+  const candidates = [
+    page.getByRole("button", { name: /accept|agree|got it|allow/i }),
+    page.getByRole("button", { name: /^(ok|close)$/i }),
+  ];
+  for (const loc of candidates) {
+    if ((await loc.count().catch(() => 0)) > 0) {
+      try {
+        await loc.first().click({ timeout: 3000 });
+        return;
+      } catch {
+        // try the next candidate
+      }
+    }
+  }
+}
+
 async function goToUploadScreen(page) {
   // Re-navigate from the nav each time rather than guessing what screen a
   // previous download left us on — slower but far more reliable.
@@ -73,11 +93,19 @@ async function goToUploadScreen(page) {
 }
 
 async function uploadImage(page, filePath) {
-  const [fileChooser] = await Promise.all([
-    page.waitForEvent("filechooser"),
-    page.getByText("Upload Image", { exact: true }).first().click(),
-  ]);
-  await fileChooser.setFiles(filePath);
+  // Prefer setting the page's file input directly — this works even if
+  // clicking Arvin's styled "Upload Image" button doesn't trigger a real
+  // OS file dialog (e.g. it's wired to a hidden <input type="file">).
+  const fileInput = page.locator('input[type="file"]').first();
+  if (await fileInput.count() > 0) {
+    await fileInput.setInputFiles(filePath);
+  } else {
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent("filechooser", { timeout: 15000 }),
+      page.getByText("Upload Image", { exact: true }).first().click(),
+    ]);
+    await fileChooser.setFiles(filePath);
+  }
 
   // Preferences panel appearing confirms the upload was accepted.
   await page.getByText("Preferences", { exact: true }).waitFor({ timeout: 30000 });
@@ -227,6 +255,7 @@ async function main() {
   const context = await chromium.launchPersistentContext(PROFILE_DIR, { headless: false });
   const page = context.pages()[0] || (await context.newPage());
   await ensureLoggedIn(page);
+  await dismissCookieBanner(page);
 
   let shuttingDown = false;
   process.on("SIGINT", () => {
