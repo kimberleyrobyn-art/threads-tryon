@@ -7,25 +7,34 @@ it drives a real Chrome browser window, it's not a headless scraper hitting
 their servers directly.
 
 **What's automated:** logging you in once and remembering it, navigating to
-AI Model, picking the product type, uploading each photo, picking
-Model/Pose/Background, clicking Generate, and downloading the result.
-Kick off a batch and it runs start to finish without you touching it.
+AI Model, picking the product type, uploading each photo, clicking
+Generate, and downloading the result.
 
-**How Model/Pose/Background picking works:** those are unlabeled image
-tiles, so there's no text to click by name. Instead, the script clicks the
-Nth tile under each heading — e.g. with `pose` set to "cycle", photo 1
-gets the 1st pose tile, photo 2 gets the 2nd, and so on, wrapping around;
-`model`/`background` default to "fixed" at tile 0 so the same model/backdrop
-is used throughout (edit `config.json` to change any of these — see
-"Configuring styling" below).
+**How Model/Pose/Background picking works** — controlled by `styleMode` in
+`config.json`:
+
+- `"once"` (the default): you pick Model/Pose/Background yourself for the
+  **first** photo only. Every photo after that skips straight to Generate,
+  relying on Arvin remembering your last picks — so one choice applies to
+  the whole batch. This is the "upload a batch, pick one model/pose/
+  background, apply it to all of them" mode.
+- `"auto"`: the script picks for you, by clicking the Nth tile under each
+  heading (since the tiles have no text labels to click by name) — e.g.
+  with `styling.pose.mode` set to `"cycle"`, photo 1 gets the 1st pose
+  tile, photo 2 gets the 2nd, wrapping around, giving variety without you
+  touching anything. See "Configuring auto mode" below.
+- `"manual"`: pauses and asks you to pick every single photo.
+
+**Important caveat on `"once"`:** it assumes Arvin keeps your last
+Model/Pose/Background selection when you upload the next photo. Watch the
+first 2-3 photos of a run to confirm that's actually true before trusting
+it on a big batch — if Arvin resets the picks on every upload instead,
+tell me and I'll switch you to `"auto"` mode instead.
 
 This was written without being able to see Arvin's actual page code (this
 tool runs from an environment that can't reach `app.arvin.business`), so
-tile-position guessing is the best I could do — **test on 1-2 photos
-first** and watch the browser window to confirm it's clicking the right
-tiles before trusting it on a full batch. Set `"autoStyling": false` in
-`config.json` to fall back to picking them yourself each photo (the script
-will pause and wait for Enter) if the automatic version misclicks.
+some of this — especially `"auto"` mode's tile-position guessing — is
+best-effort. Test on a couple of photos first.
 
 Note: this is *not* an official Arvin feature — it automates your own
 account through a normal browser. Read `app.arvin.business`'s Terms before
@@ -60,7 +69,9 @@ npx playwright install chromium
    - `delayBetweenPhotosMs` — pause between photos, in milliseconds.
    - `generateTimeoutMs` — how long to wait for a single generation +
      download before giving up on that photo.
-   - `autoStyling` / `styling` — see "Configuring styling" below.
+   - `styleMode` — `"once"`, `"auto"`, or `"manual"` (see above).
+   - `styling` — only used when `styleMode` is `"auto"`, see "Configuring
+     auto mode" below.
 2. Run it:
    ```bash
    npm start
@@ -76,10 +87,10 @@ npx playwright install chromium
    processed once — `manifest.json` (gitignored) tracks what's done, so
    restarting the script won't redo old photos.
 
-## Configuring styling
+## Configuring auto mode
 
-`config.json`'s `styling` block controls how Model / Pose / Background get
-picked automatically:
+Only relevant when `"styleMode": "auto"`. `config.json`'s `styling` block
+controls how Model / Pose / Background get picked automatically:
 
 ```json
 "styling": {
@@ -97,9 +108,8 @@ picked automatically:
   heading on Arvin's page without scrolling further — check in the
   browser and adjust if it seems off.
 
-Set `"autoStyling": false` to skip all of this and pick Model/Pose/
-Background yourself each photo instead (the script pauses and waits for
-Enter).
+Set `"styleMode": "once"` or `"manual"` to go back to picking Model/Pose/
+Background yourself instead (see above).
 
 ## Running from iPad
 

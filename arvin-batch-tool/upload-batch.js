@@ -1,9 +1,22 @@
 // Batch-uploads product photos to app.arvin.business's "AI Model" tool.
 //
 // Automated: login persistence, navigating to AI Model, picking the
-// product type, uploading each file, picking Model/Pose/Background (by
-// tile position — see selectStylingOption), clicking Generate, and
-// capturing the downloaded result.
+// product type, uploading each file, clicking Generate, and capturing the
+// downloaded result.
+//
+// Model/Pose/Background handling depends on config.json's "styleMode":
+//   - "once" (default): you pick Model/Pose/Background yourself for the
+//     FIRST photo only; every photo after that skips straight to Generate,
+//     relying on Arvin remembering your last picks — so one choice applies
+//     to the whole batch. Watch the first couple of photos to confirm
+//     Arvin is actually carrying your picks forward before trusting a big
+//     batch to this.
+//   - "auto": picks Model/Pose/Background itself by tile position (see
+//     config.json's "styling" block) — a best-effort guess at Arvin's page
+//     structure, since this was written without access to Arvin's actual
+//     HTML. Useful if you want variety (e.g. a different pose per photo)
+//     without touching anything yourself.
+//   - "manual": pauses and asks you to pick every single photo.
 //
 // With "watch": true in config.json, the script keeps running and polls
 // inputDir on an interval instead of exiting after one pass — point
@@ -11,13 +24,6 @@
 // Dropbox, etc.) via Files app, leave this running on a Mac/PC, and drop
 // photos in from your iPad whenever. Results show up in outputDir, which
 // syncs back.
-//
-// Model/Pose/Background tiles have no text labels, so "auto-styling" works
-// by clicking the Nth tile under each heading rather than matching by
-// name. It's a best-effort guess at Arvin's page structure (this was
-// written without access to Arvin's actual HTML) — test on 1-2 photos
-// before trusting it on a big batch. Set "autoStyling": false in
-// config.json to go back to picking them yourself each photo.
 //
 // Run with `npm start` from this folder. See README.md for setup.
 
@@ -47,7 +53,7 @@ function loadManifest() {
   try {
     return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
   } catch {
-    return { processed: [], nextStyleIndex: 0 };
+    return { processed: [], nextStyleIndex: 0, styleSet: false };
   }
 }
 
@@ -124,7 +130,7 @@ async function uploadImage(page, filePath) {
 // Clicks the Nth tile in the grid that follows a section heading like
 // "Model" / "Pose" / "Background". Best-effort: assumes the tile grid is
 // a sibling container right after the heading, containing clickable
-// image/button elements in DOM order.
+// image/button elements in DOM order. Only used in styleMode "auto".
 async function selectStylingOption(page, sectionLabel, optionConfig, styleIndex) {
   const index = optionConfig.mode === "cycle" ? styleIndex % optionConfig.count : optionConfig.index;
 
@@ -200,7 +206,7 @@ async function generateAndDownload(page, outputDir, baseName) {
 
 // Processes one file. Returns true on success (caller marks it done in the
 // manifest), false on failure (caller leaves it to retry next pass).
-async function processFile(page, filePath, outputDir, styleIndex) {
+async function processFile(page, filePath, outputDir, manifest) {
   const baseName = path.parse(filePath).name;
 
   try {
@@ -211,21 +217,27 @@ async function processFile(page, filePath, outputDir, styleIndex) {
     return false;
   }
 
-  let stylingApplied = false;
-  if (config.autoStyling) {
+  let stylingHandled = false;
+
+  if (config.styleMode === "auto") {
     try {
-      const picks = await applyStyling(page, styleIndex);
+      const picks = await applyStyling(page, manifest.nextStyleIndex);
       console.log(`  Auto-picked tiles: model[${picks.model}] pose[${picks.pose}] background[${picks.background}]`);
-      stylingApplied = true;
+      stylingHandled = true;
     } catch (err) {
       console.log(`  Auto-styling failed (${err.message}).`);
     }
+  } else if (config.styleMode === "once" && manifest.styleSet) {
+    console.log("  Reusing your Model/Pose/Background picks from the first photo.");
+    stylingHandled = true;
   }
 
-  if (!stylingApplied) {
-    const answer = await prompt(
-      "  Pick Model / Pose / Background in the browser, then press Enter to Generate (or 's' to skip this photo): "
-    );
+  if (!stylingHandled) {
+    const label =
+      config.styleMode === "once"
+        ? "  Pick Model / Pose / Background for this batch (same picks will be reused for every photo after this one), then press Enter to Generate (or 's' to skip this photo): "
+        : "  Pick Model / Pose / Background in the browser, then press Enter to Generate (or 's' to skip this photo): ";
+    const answer = await prompt(label);
     if (answer.toLowerCase() === "s") {
       console.log("  Skipped.");
       return false;
@@ -235,6 +247,7 @@ async function processFile(page, filePath, outputDir, styleIndex) {
   try {
     const savedTo = await generateAndDownload(page, outputDir, baseName);
     console.log(`  Saved: ${savedTo}`);
+    if (config.styleMode === "once") manifest.styleSet = true;
     return true;
   } catch (err) {
     console.log(`  Failed to generate/download: ${err.message}`);
@@ -270,8 +283,14 @@ async function main() {
     shuttingDown = true;
   });
 
-  if (config.autoStyling) {
-    console.log("Auto-styling is ON — Model/Pose/Background will be picked automatically per photo.");
+  if (config.styleMode === "once") {
+    console.log(
+      manifest.styleSet
+        ? "styleMode is 'once' and picks are already saved — every photo will reuse them without asking."
+        : "styleMode is 'once' — you'll be asked to pick Model/Pose/Background for the first photo only, then every photo after reuses that.\n"
+    );
+  } else if (config.styleMode === "auto") {
+    console.log("styleMode is 'auto' — Model/Pose/Background will be picked automatically per photo by tile position.");
     console.log("Watch the first couple of photos to make sure it's clicking the right tiles.\n");
   }
 
@@ -280,18 +299,18 @@ async function main() {
 
     for (const file of newFiles) {
       if (shuttingDown) break;
-      console.log(`\n${file} (style index ${manifest.nextStyleIndex})`);
+      console.log(`\n${file}`);
 
       let ok = false;
       try {
-        ok = await processFile(page, path.join(inputDir, file), outputDir, manifest.nextStyleIndex);
+        ok = await processFile(page, path.join(inputDir, file), outputDir, manifest);
       } catch (err) {
         console.log(`  Unexpected error on this photo: ${err.message}`);
         console.log("  Continuing with the next photo.");
       }
       processedSet.add(file);
       manifest.processed.push(file);
-      if (ok) manifest.nextStyleIndex++;
+      if (ok && config.styleMode === "auto") manifest.nextStyleIndex++;
       saveManifest(manifest);
 
       await sleep(config.delayBetweenPhotosMs);

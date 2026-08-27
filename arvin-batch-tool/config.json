@@ -11,7 +11,8 @@
   "delayBetweenPhotosMs": 3000,
   "generateTimeoutMs": 180000,
 
-  "autoStyling": true,
+  "styleMode": "once",
+
   "styling": {
     "model": { "mode": "fixed", "index": 0, "count": 9 },
     "pose": { "mode": "cycle", "index": 0, "count": 6 },
