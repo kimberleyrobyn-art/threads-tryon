@@ -30,6 +30,7 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const ARVIN_URL = "https://app.arvin.business";
+const AI_MODEL_URL = "https://app.arvin.business/feature/ai-model-photos";
 const PROFILE_DIR = path.join(__dirname, ".browser-profile"); // gitignored, holds your login
 const MANIFEST_PATH = path.join(__dirname, "manifest.json"); // gitignored, tracks what's done
 
@@ -85,9 +86,10 @@ async function dismissCookieBanner(page) {
 }
 
 async function goToUploadScreen(page) {
-  // Re-navigate from the nav each time rather than guessing what screen a
-  // previous download left us on — slower but far more reliable.
-  await page.getByText("AI Model", { exact: true }).first().click();
+  // Hard navigate to a fresh load of the AI Model page each time, rather
+  // than clicking through the nav from whatever screen a previous
+  // download left us on — avoids leftover overlays/state blocking clicks.
+  await page.goto(AI_MODEL_URL, { waitUntil: "domcontentloaded" });
   await page.getByText(config.productType, { exact: true }).first().click();
   await page.getByText("Upload Image", { exact: true }).first().waitFor({ timeout: 15000 });
 }
@@ -201,8 +203,13 @@ async function generateAndDownload(page, outputDir, baseName) {
 async function processFile(page, filePath, outputDir, styleIndex) {
   const baseName = path.parse(filePath).name;
 
-  await goToUploadScreen(page);
-  await uploadImage(page, filePath);
+  try {
+    await goToUploadScreen(page);
+    await uploadImage(page, filePath);
+  } catch (err) {
+    console.log(`  Failed to upload: ${err.message}`);
+    return false;
+  }
 
   let stylingApplied = false;
   if (config.autoStyling) {
@@ -275,7 +282,13 @@ async function main() {
       if (shuttingDown) break;
       console.log(`\n${file} (style index ${manifest.nextStyleIndex})`);
 
-      const ok = await processFile(page, path.join(inputDir, file), outputDir, manifest.nextStyleIndex);
+      let ok = false;
+      try {
+        ok = await processFile(page, path.join(inputDir, file), outputDir, manifest.nextStyleIndex);
+      } catch (err) {
+        console.log(`  Unexpected error on this photo: ${err.message}`);
+        console.log("  Continuing with the next photo.");
+      }
       processedSet.add(file);
       manifest.processed.push(file);
       if (ok) manifest.nextStyleIndex++;
