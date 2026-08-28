@@ -230,8 +230,6 @@ async function captureStyleClicks(page) {
 }
 
 async function generateAndDownload(page, outputDir, baseName) {
-  const downloadPromise = page.waitForEvent("download", { timeout: config.generateTimeoutMs });
-
   await page.getByText("Generate", { exact: true }).first().click({ force: true });
 
   // Best-effort: wait for the "Processing..." overlay to appear then clear.
@@ -239,9 +237,16 @@ async function generateAndDownload(page, outputDir, baseName) {
     await page.getByText("Processing...").first().waitFor({ state: "visible", timeout: 10000 });
     await page.getByText("Processing...").first().waitFor({ state: "hidden", timeout: config.generateTimeoutMs });
   } catch {
-    // Overlay text might differ or already be gone — fine, we still wait
-    // on the actual download event below.
+    // Overlay text might differ or already be gone — fine, we still try to
+    // download below regardless.
   }
+
+  // Start the download wait fresh now, AFTER generation has actually
+  // finished — starting it earlier (before Generate was even clicked)
+  // meant this budget silently overlapped with the generation wait above,
+  // leaving little to no real time to click Download by the time we got
+  // here even if you clicked right away.
+  const downloadPromise = page.waitForEvent("download", { timeout: config.generateTimeoutMs });
 
   // Try to auto-click a Download control under a few common patterns.
   // getByText first — the same approach that reliably finds "Generate" —

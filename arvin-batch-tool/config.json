@@ -9,7 +9,7 @@
   "watchIntervalMs": 15000,
 
   "delayBetweenPhotosMs": 3000,
-  "generateTimeoutMs": 180000,
+  "generateTimeoutMs": 120000,
 
   "styleMode": "once",
 
