@@ -11,7 +11,7 @@
   "delayBetweenPhotosMs": 3000,
   "generateTimeoutMs": 180000,
 
-  "styleMode": "once",
+  "styleMode": "manual",
 
   "styling": {
     "model": { "mode": "fixed", "index": 0, "count": 9 },
