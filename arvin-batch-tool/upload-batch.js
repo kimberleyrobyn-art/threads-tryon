@@ -242,7 +242,11 @@ async function generateAndDownload(page, outputDir, baseName) {
   }
 
   // Try to auto-click a Download control under a few common patterns.
+  // getByText first — the same approach that reliably finds "Generate" —
+  // since Arvin's buttons don't appear to expose proper button/link roles
+  // or aria-labels for Playwright's role-based matching to catch.
   const candidates = [
+    page.getByText("Download", { exact: true }),
     page.getByRole("button", { name: /download/i }),
     page.getByRole("link", { name: /download/i }),
     page.locator('[aria-label*="download" i]'),
