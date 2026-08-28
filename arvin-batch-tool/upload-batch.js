@@ -63,7 +63,15 @@ function saveManifest(manifest) {
 
 async function ensureLoggedIn(page) {
   await page.goto(ARVIN_URL, { waitUntil: "domcontentloaded" });
-  const loggedIn = await page.getByText("AI Model", { exact: true }).first().isVisible().catch(() => false);
+  // Give the page a real chance to render before deciding you're logged
+  // out — checking instantly after navigation can catch it mid-load and
+  // wrongly conclude "not logged in" even with a perfectly valid session.
+  const loggedIn = await page
+    .getByText("AI Model", { exact: true })
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 })
+    .then(() => true)
+    .catch(() => false);
   if (loggedIn) return;
 
   console.log("\nNot logged in yet.");
