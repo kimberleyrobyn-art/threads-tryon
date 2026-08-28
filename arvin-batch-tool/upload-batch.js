@@ -148,11 +148,12 @@ async function clickTileAtIndex(page, sectionLabel, index) {
   await heading.scrollIntoViewIfNeeded();
 
   const container = heading.locator("xpath=following-sibling::*[1]");
-  // Direct children only — matching "img, button, [role=button]" together
-  // double-counts a single tile when its clickable wrapper AND the image
-  // inside it both match (e.g. a <button><img></button> tile registers as
-  // two separate elements at two different indices for one physical tile).
-  const tiles = container.locator(":scope > *");
+  // img only — each tile is visually one photo, so this is the one
+  // element type guaranteed not to double-match a single tile the way
+  // "img, button, [role=button]" did (button-wrapping-img counted twice)
+  // or to miscount if Arvin wraps rows in extra container divs (which
+  // ":scope > *" direct-children fell into).
+  const tiles = container.locator("img");
 
   const count = await tiles.count();
   if (count === 0) {
@@ -207,10 +208,11 @@ async function captureStyleClicks(page) {
       if (!heading) continue;
       const container = heading.nextElementSibling;
       if (!container) continue;
-      // Direct children only — see the matching note in clickTileAtIndex()
-      // about why "img, button, [role=button]" together double-counts.
-      const tiles = container.children;
-      Array.from(tiles).forEach((tile, index) => {
+      // img only — must match clickTileAtIndex()'s selector exactly, or
+      // captured indices here won't line up with what gets re-clicked
+      // there for later photos.
+      const tiles = container.querySelectorAll("img");
+      tiles.forEach((tile, index) => {
         if (tile.dataset.styleCaptureBound) return;
         tile.dataset.styleCaptureBound = "1";
         tile.addEventListener(
