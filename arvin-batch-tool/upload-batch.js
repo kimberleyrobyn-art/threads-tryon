@@ -148,7 +148,11 @@ async function clickTileAtIndex(page, sectionLabel, index) {
   await heading.scrollIntoViewIfNeeded();
 
   const container = heading.locator("xpath=following-sibling::*[1]");
-  const tiles = container.locator('img, button, [role="button"]');
+  // Direct children only — matching "img, button, [role=button]" together
+  // double-counts a single tile when its clickable wrapper AND the image
+  // inside it both match (e.g. a <button><img></button> tile registers as
+  // two separate elements at two different indices for one physical tile).
+  const tiles = container.locator(":scope > *");
 
   const count = await tiles.count();
   if (count === 0) {
@@ -203,8 +207,10 @@ async function captureStyleClicks(page) {
       if (!heading) continue;
       const container = heading.nextElementSibling;
       if (!container) continue;
-      const tiles = container.querySelectorAll('img, button, [role="button"]');
-      tiles.forEach((tile, index) => {
+      // Direct children only — see the matching note in clickTileAtIndex()
+      // about why "img, button, [role=button]" together double-counts.
+      const tiles = container.children;
+      Array.from(tiles).forEach((tile, index) => {
         if (tile.dataset.styleCaptureBound) return;
         tile.dataset.styleCaptureBound = "1";
         tile.addEventListener(
