@@ -6,11 +6,10 @@
 //
 // Model/Pose/Background handling depends on config.json's "styleMode":
 //   - "once" (default): you pick Model/Pose/Background yourself for the
-//     FIRST photo only; every photo after that skips straight to Generate,
-//     relying on Arvin remembering your last picks — so one choice applies
-//     to the whole batch. Watch the first couple of photos to confirm
-//     Arvin is actually carrying your picks forward before trusting a big
-//     batch to this.
+//     FIRST photo only. The script watches which exact tiles you click and
+//     automatically re-clicks those same tiles for every photo after —
+//     this replay is necessary because Arvin resets the selection on every
+//     new upload rather than remembering it itself.
 //   - "auto": picks Model/Pose/Background itself by tile position (see
 //     config.json's "styling" block) — a best-effort guess at Arvin's page
 //     structure, since this was written without access to Arvin's actual
@@ -53,7 +52,7 @@ function loadManifest() {
   try {
     return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
   } catch {
-    return { processed: [], nextStyleIndex: 0, styleSet: false };
+    return { processed: [], nextStyleIndex: 0, capturedStyle: null };
   }
 }
 
@@ -143,10 +142,8 @@ async function uploadImage(page, filePath) {
 // Clicks the Nth tile in the grid that follows a section heading like
 // "Model" / "Pose" / "Background". Best-effort: assumes the tile grid is
 // a sibling container right after the heading, containing clickable
-// image/button elements in DOM order. Only used in styleMode "auto".
-async function selectStylingOption(page, sectionLabel, optionConfig, styleIndex) {
-  const index = optionConfig.mode === "cycle" ? styleIndex % optionConfig.count : optionConfig.index;
-
+// image/button elements in DOM order.
+async function clickTileAtIndex(page, sectionLabel, index) {
   const heading = page.getByText(sectionLabel, { exact: true }).first();
   await heading.scrollIntoViewIfNeeded();
 
@@ -165,13 +162,63 @@ async function selectStylingOption(page, sectionLabel, optionConfig, styleIndex)
   return clampedIndex;
 }
 
+// Only used in styleMode "auto".
 async function applyStyling(page, styleIndex) {
   const picks = {};
   for (const [label, key] of [["Model", "model"], ["Pose", "pose"], ["Background", "background"]]) {
     const optionConfig = config.styling[key];
-    picks[key] = await selectStylingOption(page, label, optionConfig, styleIndex);
+    const index = optionConfig.mode === "cycle" ? styleIndex % optionConfig.count : optionConfig.index;
+    picks[key] = await clickTileAtIndex(page, label, index);
   }
   return picks;
+}
+
+// Only used in styleMode "once": watches which tile you actually click
+// under each "Model" / "Pose" / "Background" heading, so those exact tiles
+// can be re-clicked automatically for every photo after this one — instead
+// of hoping Arvin remembers your picks itself (it doesn't; it resets the
+// selection on every new upload).
+let styleClickCaptureRegistered = false;
+async function captureStyleClicks(page) {
+  const captured = { model: null, pose: null, background: null };
+
+  if (!styleClickCaptureRegistered) {
+    await page.exposeFunction("__reportStyleClick", (section, index) => {
+      captured[section] = index;
+      console.log(`  (captured your ${section} pick: tile ${index})`);
+    });
+    styleClickCaptureRegistered = true;
+  }
+
+  await page.evaluate(() => {
+    const sections = [
+      ["Model", "model"],
+      ["Pose", "pose"],
+      ["Background", "background"],
+    ];
+    for (const [label, key] of sections) {
+      const heading = [...document.querySelectorAll("*")].find(
+        (el) => el.children.length === 0 && el.textContent.trim() === label
+      );
+      if (!heading) continue;
+      const container = heading.nextElementSibling;
+      if (!container) continue;
+      const tiles = container.querySelectorAll('img, button, [role="button"]');
+      tiles.forEach((tile, index) => {
+        if (tile.dataset.styleCaptureBound) return;
+        tile.dataset.styleCaptureBound = "1";
+        tile.addEventListener(
+          "click",
+          () => {
+            window.__reportStyleClick(key, index);
+          },
+          { capture: true }
+        );
+      });
+    }
+  });
+
+  return captured;
 }
 
 async function generateAndDownload(page, outputDir, baseName) {
@@ -240,27 +287,50 @@ async function processFile(page, filePath, outputDir, manifest) {
     } catch (err) {
       console.log(`  Auto-styling failed (${err.message}).`);
     }
-  } else if (config.styleMode === "once" && manifest.styleSet) {
-    console.log("  Reusing your Model/Pose/Background picks from the first photo.");
-    stylingHandled = true;
+  } else if (config.styleMode === "once" && manifest.capturedStyle) {
+    // Re-click the exact tiles captured from the first photo — Arvin
+    // resets the selection on every new upload, so this has to be
+    // repeated for real each time, not skipped.
+    try {
+      const { model, pose, background } = manifest.capturedStyle;
+      await clickTileAtIndex(page, "Model", model);
+      await clickTileAtIndex(page, "Pose", pose);
+      await clickTileAtIndex(page, "Background", background);
+      console.log(`  Replayed your picks: model[${model}] pose[${pose}] background[${background}]`);
+      stylingHandled = true;
+    } catch (err) {
+      console.log(`  Replaying your picks failed (${err.message}) — pick manually this time.`);
+    }
   }
 
   if (!stylingHandled) {
+    let capture = null;
+    if (config.styleMode === "once" && !manifest.capturedStyle) {
+      capture = await captureStyleClicks(page);
+    }
+
     const label =
       config.styleMode === "once"
-        ? "  Pick Model / Pose / Background for this batch (same picks will be reused for every photo after this one), then press Enter to Generate (or 's' to skip this photo): "
+        ? "  Pick Model / Pose / Background for this batch (I'll watch which tiles you click and reuse those exact ones for every photo after this), then press Enter to Generate (or 's' to skip this photo): "
         : "  Pick Model / Pose / Background in the browser, then press Enter to Generate (or 's' to skip this photo): ";
     const answer = await prompt(label);
     if (answer.toLowerCase() === "s") {
       console.log("  Skipped.");
       return false;
     }
+
+    if (capture) {
+      if (capture.model !== null && capture.pose !== null && capture.background !== null) {
+        manifest.capturedStyle = capture;
+      } else {
+        console.log("  (couldn't tell exactly which tiles you clicked — will ask again next photo.)");
+      }
+    }
   }
 
   try {
     const savedTo = await generateAndDownload(page, outputDir, baseName);
     console.log(`  Saved: ${savedTo}`);
-    if (config.styleMode === "once") manifest.styleSet = true;
     return true;
   } catch (err) {
     console.log(`  Failed to generate/download: ${err.message}`);
@@ -298,9 +368,9 @@ async function main() {
 
   if (config.styleMode === "once") {
     console.log(
-      manifest.styleSet
-        ? "styleMode is 'once' and picks are already saved — every photo will reuse them without asking."
-        : "styleMode is 'once' — you'll be asked to pick Model/Pose/Background for the first photo only, then every photo after reuses that.\n"
+      manifest.capturedStyle
+        ? `styleMode is 'once' and picks are already captured (model[${manifest.capturedStyle.model}] pose[${manifest.capturedStyle.pose}] background[${manifest.capturedStyle.background}]) — every photo will replay them automatically.`
+        : "styleMode is 'once' — pick Model/Pose/Background for the first photo, I'll capture exactly which tiles you click, then replay those same clicks automatically for every photo after.\n"
     );
   } else if (config.styleMode === "auto") {
     console.log("styleMode is 'auto' — Model/Pose/Background will be picked automatically per photo by tile position.");

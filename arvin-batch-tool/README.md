@@ -14,10 +14,12 @@ Generate, and downloading the result.
 `config.json`:
 
 - `"once"` (the default): you pick Model/Pose/Background yourself for the
-  **first** photo only. Every photo after that skips straight to Generate,
-  relying on Arvin remembering your last picks — so one choice applies to
-  the whole batch. This is the "upload a batch, pick one model/pose/
-  background, apply it to all of them" mode.
+  **first** photo only. The script watches exactly which tiles you click
+  and automatically re-clicks those same tiles for every photo after —
+  this replay step is necessary because Arvin resets the selection on
+  every new upload; it does not remember your last picks on its own. This
+  is the "upload a batch, pick one model/pose/background, apply it to all
+  of them" mode.
 - `"auto"`: the script picks for you, by clicking the Nth tile under each
   heading (since the tiles have no text labels to click by name) — e.g.
   with `styling.pose.mode` set to `"cycle"`, photo 1 gets the 1st pose
@@ -25,11 +27,9 @@ Generate, and downloading the result.
   touching anything. See "Configuring auto mode" below.
 - `"manual"`: pauses and asks you to pick every single photo.
 
-**Important caveat on `"once"`:** it assumes Arvin keeps your last
-Model/Pose/Background selection when you upload the next photo. Watch the
-first 2-3 photos of a run to confirm that's actually true before trusting
-it on a big batch — if Arvin resets the picks on every upload instead,
-tell me and I'll switch you to `"auto"` mode instead.
+**Watch the first 2-3 photos of a run** to confirm it's actually
+re-clicking the right tiles each time — the click-capture is a best-effort
+guess at Arvin's page structure (see below), same as `"auto"` mode.
 
 This was written without being able to see Arvin's actual page code (this
 tool runs from an environment that can't reach `app.arvin.business`), so
